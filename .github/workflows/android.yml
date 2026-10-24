@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Dependencies
-        run: sudo apt-get update && sudo apt-get install -y libsdl2-dev cmake
+        run: sudo apt-get update && sudo apt-get install -y libsdl2-dev cmake pkg-config libavformat-dev libavcodec-dev libswscale-dev libswresample-dev libavutil-dev
       - name: Build
         run: |
           cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo
@@ -57,7 +57,12 @@ jobs:
 
       - name: Build FFmpeg (arm64, LGPL)
         if: steps.ffmpeg-cache.outputs.cache-hit != 'true'
-        run: bash tools/android/build-ffmpeg.sh
+        run: |
+          bash tools/android/build-ffmpeg.sh 2>&1 | tee ffmpeg-build.log || {
+            # the runner logs are not readable from everywhere: put the tail into an annotation too
+            { tail -n 12 ffmpeg-build.log; tail -n 25 build-ffmpeg-src/ffbuild/config.log 2>/dev/null; } | tr '\n' '|' | cut -c1-3000 | sed 's/^/::error::/'
+            exit 1
+          }
 
       # A stable signing key from the repo secrets (if set), so each APK installs over the last one.
       - name: Signing key
