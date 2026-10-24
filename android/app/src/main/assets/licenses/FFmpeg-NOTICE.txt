@@ -1,0 +1,6 @@
+This app plays the game's two intro movies with FFmpeg 6.1.1 (https://ffmpeg.org), licensed under the
+GNU Lesser General Public License, version 2.1 or later (full text: FFmpeg-LGPL-2.1.txt).
+FFmpeg is used as shared libraries (libavformat, libavcodec, libswscale, libswresample, libavutil in the
+app's lib/ folder), built without any GPL or non-free components. The source of the exact version is
+https://github.com/FFmpeg/FFmpeg at tag n6.1.1; the build script is tools/android/build-ffmpeg.sh in
+https://github.com/sirbilliams/Tinkerbell-Android. You may replace these libraries with your own build.

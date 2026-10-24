@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Dependencies
-        run: sudo apt-get update && sudo apt-get install -y libsdl2-dev cmake
+        run: sudo apt-get update && sudo apt-get install -y libsdl2-dev cmake pkg-config libavformat-dev libavcodec-dev libswscale-dev libswresample-dev libavutil-dev
       - name: Build
         run: |
           cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo
@@ -44,6 +44,27 @@ jobs:
       - name: Fetch SDL2 (pinned)
         run: bash fetch-deps.sh
 
+      # Minimal LGPL FFmpeg for the movies; cached so it is only rebuilt when the script or the pin changes.
+      - name: FFmpeg cache
+        id: ffmpeg-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            android/app/jni/ffmpeg-inc
+            android/app/jni/ffmpeg-libs
+            android/app/src/main/assets/licenses/FFmpeg-LGPL-2.1.txt
+          key: ffmpeg-arm64-${{ hashFiles('tools/android/build-ffmpeg.sh', 'deps.lock') }}
+
+      - name: Build FFmpeg (arm64, LGPL)
+        if: steps.ffmpeg-cache.outputs.cache-hit != 'true'
+        run: |
+          set -o pipefail
+          bash tools/android/build-ffmpeg.sh 2>&1 | tee ffmpeg-build.log || {
+            # the runner logs are not readable from everywhere: put the tail into an annotation too
+            { tail -n 12 ffmpeg-build.log; tail -n 25 build-ffmpeg-src/ffbuild/config.log 2>/dev/null; } | tr '\n' '|' | cut -c1-3000 | sed 's/^/::error::/'
+            exit 1
+          }
+
       # A stable signing key from the repo secrets (if set), so each APK installs over the last one.
       - name: Signing key
         env:
@@ -67,8 +88,16 @@ jobs:
       - name: Build APK
         working-directory: android
         run: |
+          set -o pipefail
           chmod +x gradlew
-          ./gradlew --no-daemon --stacktrace assembleDebug
+          ./gradlew --no-daemon --stacktrace assembleDebug 2>&1 | tee ../gradle-build.log || {
+            # the runner logs are not readable from everywhere: put the errors into an annotation too
+            { grep -nE "error|Error|FAILED|What went wrong|undefined|not found|fatal" -A2 ../gradle-build.log | head -n 40; } | tr '\n' '|' | cut -c1-3500 | sed 's/^/::error::/'
+            exit 1
+          }
+
+      - name: Check the APK carries FFmpeg
+        run: unzip -l android/app/build/outputs/apk/debug/app-debug.apk | grep -E "lib/arm64-v8a/lib(avcodec|avformat|swscale|swresample|avutil)" 
 
       - name: Collect APK
         run: |
