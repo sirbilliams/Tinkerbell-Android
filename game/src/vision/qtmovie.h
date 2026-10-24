@@ -4,18 +4,20 @@
 // 0x200f0 NewMovieFromFile, 0x200d5 CloseMovieFile, 0x2000d GoToBeginningOfMovie, 0x2000b StartMovie,
 // 0x2000c StopMovie, 0x20023 DisposeMovie); the port uses platform/movie.h (FFmpeg).
 #pragma once
+#include "engine.h"
 #include "../../../platform/movie.h"
 #include <stdint.h>
 #include <string>
 
 namespace Vision {
 
-class QTMovie {
+class QTMovie : public Service {              // vtable 0x513e3c; base Service@Vision
 public:
     QTMovie(const char *name, const char *dir = "data");   // 0x435730 ("data" is what MovieScene passes)
-    ~QTMovie();                                            // 0x4357f0
+    ~QTMovie() override;                                   // 0x4357f0
+    Node *root() override;                                 // +0x10 0x435b90 -> 0x5a9630
 
-    std::string name, dir;
+    std::string movieName, movieDir;
     void open();                    // 0x435810: "<dir>\<name>.mov"
     void dispose();                 // 0x4359d0
     void play();                    // 0x435a10

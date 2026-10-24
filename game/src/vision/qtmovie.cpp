@@ -4,13 +4,16 @@
 
 namespace Vision {
 
-QTMovie::QTMovie(const char *n, const char *d) : name(n ? n : ""), dir(d ? d : ""), m_(nullptr), playing_(false) {}   // 0x435730
+QTMovie::QTMovie(const char *n, const char *d)   // 0x435730
+    : Service(nullptr), movieName(n ? n : ""), movieDir(d ? d : ""), m_(nullptr), playing_(false) {}
+
+Gorilla::Node *QTMovie::root() { static Gorilla::Node n; return &n; }   // 0x435b90 (0x5a9630)
 
 QTMovie::~QTMovie() { dispose(); }              // 0x4357f0
 
 void QTMovie::open() {                          // 0x435810
     if (m_) return;
-    std::string rel = dir.empty() ? name + ".mov" : dir + "\\" + name + ".mov";
+    std::string rel = movieDir.empty() ? movieName + ".mov" : movieDir + "\\" + movieName + ".mov";
     // port: QuickTime opened the file by FSSpec; here the path is resolved case-insensitively and opened by FFmpeg
     std::string full = tb_game_path(rel.c_str());
     FILE *f = tb_fopen_ci(rel.c_str());
@@ -22,6 +25,7 @@ void QTMovie::open() {                          // 0x435810
 void QTMovie::dispose() {                       // 0x4359d0
     if (!m_) return;
     if (playing_) { tb_movie_stop(m_); playing_ = false; }
+    deactivate();                               // +0x1c
     tb_movie_close(m_);
     m_ = nullptr;
 }
@@ -30,6 +34,7 @@ void QTMovie::play() {                          // 0x435a10
     if (!playing_ && m_) {
         playing_ = true;
         tb_movie_start(m_);                     // GoToBeginningOfMovie, StartMovie
+        activate();                             // +0x18
     }
 }
 
