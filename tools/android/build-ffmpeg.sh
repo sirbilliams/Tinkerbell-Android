@@ -45,7 +45,7 @@ cd "$SRC"
     --disable-autodetect --disable-asm \
     --enable-avformat --enable-avcodec --enable-swscale --enable-swresample \
     --enable-protocol=file --enable-demuxer=mov \
-    --enable-decoder=svq1 --enable-decoder=rpza --enable-decoder=pcm_s16be \ \
+    --enable-decoder=svq1 --enable-decoder=rpza --enable-decoder=pcm_s16be \
     --extra-cflags="-O2 -fPIC"
 # Android's loader wants plain lib<name>-<major>.so names that can sit in an APK (no libfoo.so.60 symlinks)
 cat >> ffbuild/config.mak <<'MAK'
