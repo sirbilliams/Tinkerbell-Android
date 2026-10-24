@@ -49,5 +49,15 @@ Phase 0 5% | desktop reaches the sign-in room 20% | first APK on the Thor 25% | 
   `globals_inventory.py`.
 - Desktop build: `cmake -S . -B build && make -C build -j2`; run from the game folder (see agent-brief).
 
+## Repo map
+| Path | What |
+|---|---|
+| `platform/` | Win32/DirectX shim on SDL2: core (log, paths, headless), exe_data (values from the player's exe), ddraw (lane A), dsound + movie (lane B), dinput + gdi + crash_android (lane C). |
+| `game/src/vision/` | The reconstructed Vision engine: winmain, engine (services, tasks, scenes), object, ras, graphics, sound, wv6, qtmovie. |
+| `game/src/scenes/` | Game classes (phase 2). |
+| `android/` | App: SetupActivity (ISO import, Play, Share log), GameActivity (SDL). |
+| `tools/decomp`, `tools/formats`, `tools/android/build-ffmpeg.sh`, `tools/wine/run_original.sh` | Decomp inputs, format checkers, FFmpeg for Android, Wine runner (the original refuses to start under Wine). |
+| `docs/` | agent-brief.md (lanes, rules), formats.md, api-sites.md, lane-c.md, this file, NEXT-SESSION.md. |
+
 ## Status
 See docs/NEXT-SESSION.md.
