@@ -10,6 +10,7 @@
 //   s->open(); s->play(); ... s->stop(); s->close(); delete s;
 //   Sound::tickAll() once per frame/tick feeds the streaming sounds (the original's Service tick).
 #pragma once
+#include "engine.h"
 #include "wv6.h"
 #include "../../../platform/dsound.h"
 #include <stdint.h>
@@ -57,12 +58,14 @@ public:
     void release();                          // 0x420d10
 };
 
-class Sound {                                // vtable 0x513a94, 0x348 bytes
+// A Service (vtable 0x513a94; base Service@Vision): streaming sounds are in the Sound service list (0x5a74e8) while
+// they play, and the Sound kind's frame (0x420600) calls their SoundStream::update().
+class Sound : public Service {               // 0x348 bytes
 public:
     explicit Sound(const char *name);        // 0x420210
-    ~Sound();                                // 0x420310
+    ~Sound() override;                       // 0x420310
+    Node *root() override;                   // +0x10 0x420640 -> 0x5a74e8
 
-    std::string name;
     int mode;                                // +0x338: 0 = decode whole into the buffer, 1 = stream from memory, 2 = stream from the file
     int field33c;                            // +0x33c (5)
     int type;                                // +0x340 (7); 6 = loops
@@ -79,7 +82,7 @@ public:
     // the optional second data block of the record, kept after the ADPCM data is freed (+0x330 / +0x31c)
     std::vector<uint8_t> extra;
 
-    static void tickAll();                   // port: the Service tick that calls SoundStream::update()
+    static void tickAll();                   // 0x420600: update() of every streaming sound in the list
     static int activeCount();
 
 private:
@@ -93,7 +96,6 @@ private:
     TbDSBuffer *ds_;                         // +0xc8 -> +4
     bool valid_;                             // +0xcc
     bool opened_;                            // +0x334
-    friend struct SoundTicker;
 };
 
 }  // namespace Vision

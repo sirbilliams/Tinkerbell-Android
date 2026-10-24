@@ -10,7 +10,7 @@ static std::string g_audio_dir = "audio";   // port: the original's globals (0x5
 void sound_set_audio_dir(const char *dir) { g_audio_dir = dir ? dir : ""; }
 const std::string &sound_audio_dir() { return g_audio_dir; }
 
-static std::vector<Sound *> g_active;       // sounds whose stream wants update() calls
+static Gorilla::Node &sound_list() { static Gorilla::Node n; return n; }   // 0x5a74e8
 
 // ---------------------------------------------------------------- SoundBuffer
 
@@ -123,14 +123,17 @@ void SoundStream::release() {               // 0x420d10
 // ---------------------------------------------------------------- Sound
 
 Sound::Sound(const char *n)                 // 0x420210
-    : name(n ? n : ""), mode(0), field33c(5), type(7), playedAt(0), buf_(nullptr), shared_(nullptr),
+    : Service(nullptr), mode(0), field33c(5), type(7), playedAt(0), buf_(nullptr), shared_(nullptr),
       ds_(nullptr), valid_(false), opened_(false) {
-    own_.name = name;
+    setName(n ? n : "");                    // 0x424400 (the original's last step)
+    own_.name = name_;
 }
 
 Sound::~Sound() {                           // 0x420310
     close();
 }
+
+Gorilla::Node *Sound::root() { return &sound_list(); }   // 0x420640
 
 bool Sound::makeDirectSoundBuffer(uint32_t bytes) {   // 0x41ff00
     TbWaveFormat wf;
@@ -163,10 +166,10 @@ void Sound::makeBuffer() {                  // 0x420040 (mode 1 and 2)
     }
     if (mode == 2) {                        // Sound::makeStreamBuffer
         std::string dir = sound_audio_dir();
-        std::string rel = dir.empty() ? name + ".wv6" : dir + "\\" + name + ".wv6";
+        std::string rel = dir.empty() ? name_ + ".wv6" : dir + "\\" + name_ + ".wv6";
         FILE *f = tb_fopen_ci(rel.c_str());
         if (!f) {
-            tb_log("Sound::makeStreamBuffer could not load %s", name.c_str());
+            tb_log("Sound::makeStreamBuffer could not load %s", name());
             valid_ = false;
             return;
         }
@@ -180,7 +183,7 @@ void Sound::makeBuffer() {                  // 0x420040 (mode 1 and 2)
 }
 
 void Sound::open(SoundBuffer *shared) {     // 0x41f9d0
-    if (name.empty()) {
+    if (name_.empty()) {
         tb_log("WARNING: Sound::open() tried to open an no-name sound");
         return;
     }
@@ -191,7 +194,7 @@ void Sound::open(SoundBuffer *shared) {     // 0x41f9d0
     bool owns = (shared == nullptr);
     if (mode != 2) {
         if (owns) {
-            own_.name = name;
+            own_.name = name_;
             own_.load();
             if (!own_.data) return;
             valid_ = true;
@@ -218,7 +221,7 @@ void Sound::open(SoundBuffer *shared) {     // 0x41f9d0
         makeBuffer();
         if (valid_ && ds_) {
             uint32_t bytes = wv_.rate == 0 ? 0x16000 : (wv_.bits >> 3) * wv_.rate;
-            stream_.init(ds_, bytes, &wv_, type == 6, mode == 2 ? name.c_str() : nullptr);
+            stream_.init(ds_, bytes, &wv_, type == 6, mode == 2 ? name() : nullptr);
         }
     }
     if (owns && mode == 0) {
@@ -233,17 +236,17 @@ void Sound::open(SoundBuffer *shared) {     // 0x41f9d0
 void Sound::play() {                        // 0x41fd50
     if (!g_tb_dsound) return;
     if (!valid_) {
-        tb_log("Cannot play sound %s (it's not valid).", wv_.name);
+        tb_log("Cannot play sound %s (it's not valid).", name());
         return;
     }
-    playedAt = SDL_GetTicks();
+    playedAt = real_time();                 // 0x4207c0
     if (mode == 0) {
         if (g_tb_dsound && valid_ && ds_) ds_->SetCurrentPosition(0);
         if (ds_) ds_->Play(0, 0, type == 6 ? TB_DSBPLAY_LOOPING : 0);
     } else if (mode == 1 || mode == 2) {
         if (ds_) {
             stream_.start();                // 0x420c60
-            if (std::find(g_active.begin(), g_active.end(), this) == g_active.end()) g_active.push_back(this);   // service start
+            activate();                     // +0x18
         }
     }
 }
@@ -252,7 +255,7 @@ void Sound::stop() {                        // 0x41fe70
     if (g_tb_dsound && valid_) {
         if (mode == 1 || mode == 2) {
             stream_.stop();                 // 0x420cf0
-            g_active.erase(std::remove(g_active.begin(), g_active.end(), this), g_active.end());   // service stop
+            deactivate();                   // +0x1c
         } else if (ds_) {
             ds_->Stop();
         }
@@ -264,7 +267,7 @@ void Sound::close() {                       // 0x41fc50
         if (g_tb_dsound && valid_) {
             if (mode == 1 || mode == 2) {
                 stream_.stop();
-                g_active.erase(std::remove(g_active.begin(), g_active.end(), this), g_active.end());
+                deactivate();
             } else if (ds_) {
                 ds_->Stop();
             }
@@ -297,17 +300,13 @@ uint32_t Sound::lengthMs() {                // 0x41fe30
     return wv_.frames() * 1000u / wv_.rate;
 }
 
-void Sound::tickAll() {
-    std::vector<Sound *> snap = g_active;
-    for (size_t i = 0; i < snap.size(); i++) {
-        Sound *s = snap[i];
-        if (std::find(g_active.begin(), g_active.end(), s) == g_active.end()) continue;
-        s->stream_.update();
-        if (s->stream_.finished)            // nothing more to feed; the buffer plays out by itself
-            g_active.erase(std::remove(g_active.begin(), g_active.end(), s), g_active.end());
+void Sound::tickAll() {                     // 0x420600
+    for (Gorilla::Node *n = sound_list().first; n; n = n->next) {
+        Sound *s = (Sound *)(Service *)n->obj;
+        if (s->mode == 1 || s->mode == 2) s->stream_.update();
     }
 }
 
-int Sound::activeCount() { return (int)g_active.size(); }
+int Sound::activeCount() { return (int)sound_list().kids.size(); }
 
 }  // namespace Vision
