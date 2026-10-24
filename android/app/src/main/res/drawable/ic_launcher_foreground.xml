@@ -1,0 +1,13 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+    <!-- wings -->
+    <path android:fillColor="#B3E8FFF0" android:pathData="M54,56 C40,50 28,36 30,24 C42,24 52,38 54,56z" />
+    <path android:fillColor="#B3E8FFF0" android:pathData="M54,56 C68,50 80,36 78,24 C66,24 56,38 54,56z" />
+    <path android:fillColor="#80E8FFF0" android:pathData="M54,58 C42,60 32,70 36,80 C46,80 54,70 54,58z" />
+    <path android:fillColor="#80E8FFF0" android:pathData="M54,58 C66,60 76,70 72,80 C62,80 54,70 54,58z" />
+    <!-- sparkle -->
+    <path android:fillColor="#FFFFE27A" android:pathData="M54,36 L58,52 L74,56 L58,60 L54,76 L50,60 L34,56 L50,52z" />
+    <path android:fillColor="#FFFFFFFF" android:pathData="M54,46 L56,54 L62,56 L56,58 L54,66 L52,58 L46,56 L52,54z" />
+    <path android:fillColor="#FFFFE27A" android:pathData="M82,70 L84,76 L90,78 L84,80 L82,86 L80,80 L74,78 L80,76z" />
+    <path android:fillColor="#FFFFE27A" android:pathData="M26,66 L27.5,70 L32,71.5 L27.5,73 L26,77 L24.5,73 L20,71.5 L24.5,70z" />
+</vector>
