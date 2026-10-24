@@ -49,6 +49,11 @@ android {
         }
     }
 
+    // the FFmpeg .so files (tools/android/build-ffmpeg.sh) ride along in lib/arm64-v8a/
+    sourceSets {
+        main { jniLibs.srcDirs = ['jni/ffmpeg-libs'] }
+    }
+
     externalNativeBuild {
         cmake {
             path 'jni/CMakeLists.txt'
