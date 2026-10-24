@@ -260,6 +260,7 @@ public:
             int hitmode, uint32_t f8c);              // 0x411b90
     ~Graphic() override;                             // 0x402830
     virtual int canvasMode() { return 1; }           // +0x10: 1 = drawn into locked pixels, 2 = through a DC
+    virtual double setScale(double percent);         // +0x14 0x412660 (port: was missing; defined in animation.cpp)
     virtual void setHit(int mode, bool f90);         // +0x18
     virtual bool hit(int x, int y);                  // +0x2c
     virtual void dirty();                            // +0x34
