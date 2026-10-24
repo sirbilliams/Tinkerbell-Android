@@ -5,6 +5,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Desktop: SDL2 from the system. Android: android/app/jni/CMakeLists.txt adds SDL first, then this file.
+# Movies play through FFmpeg (LGPL, shared libs). Desktop: the system libav* via pkg-config. Android: the
+# launcher build provides them (not yet), so it defaults OFF there and QTMovie reports "no movie".
+if(ANDROID)
+  option(TB_FFMPEG "Play the .mov movies through FFmpeg" OFF)
+else()
+  option(TB_FFMPEG "Play the .mov movies through FFmpeg" ON)
+endif()
 option(TB_SANITIZE "Build with ASan + UBSan (run before every APK: Android's allocator crashes on use-after-free)" OFF)
 
 if(NOT TARGET SDL2::SDL2 AND NOT TARGET SDL2 AND NOT TARGET SDL2::SDL2-static)
@@ -34,6 +41,12 @@ else()
   target_link_libraries(tinkerbell PRIVATE ${TB_SDL} dl m)
 endif()
 target_include_directories(tinkerbell PRIVATE platform game/src ${SDL2_INCLUDE_DIRS})
+if(TB_FFMPEG AND NOT ANDROID)
+  find_package(PkgConfig REQUIRED)
+  pkg_check_modules(TB_AV REQUIRED IMPORTED_TARGET libavformat libavcodec libswscale libswresample libavutil)
+  target_link_libraries(tinkerbell PRIVATE PkgConfig::TB_AV)
+  target_compile_definitions(tinkerbell PRIVATE TB_HAVE_FFMPEG=1)
+endif()
 target_compile_options(tinkerbell PRIVATE -Wall -Wno-unused-variable -Wno-unused-function -fno-strict-aliasing -fwrapv)
 if(TB_SANITIZE)
   target_compile_options(tinkerbell PRIVATE -fsanitize=address,undefined -fno-omit-frame-pointer)

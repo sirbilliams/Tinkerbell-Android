@@ -34,8 +34,9 @@ All 10,376 sprites decode to exactly their record length.
 Sprite-like header (8-bit, kind 1 in the sample). Exact use: with the blitters (Alpha_Vision.c).
 
 ## Sound (`.wv6`)
-0x58 channels, 0x5c bits (16), 0x60 rate, 0x64 decoded byte length, 0x6c offset of the data block
-(u32 length, then data). ADPCM decoded by 0x423170, **high nibble first**, IMA step/index tables
+0x58 channels, 0x5c bits (16), 0x60 rate, 0x64 decoded byte length, 0x68 compressed flag, 0x6c offset of the
+data block (0x88 in every file: u32 length at 0x88, ADPCM data at 0x8c); 0x70 / 0x74 say whether a second /
+third block (u32 length + data) follows. All 1121 files are mono 16-bit, 22050 or 44100 Hz. ADPCM decoded by 0x423170, **high nibble first**, IMA step/index tables
 (0x513b70 / 0x513cd4, read from the exe), but the game's own delta: `t = step*(nib&7);
 d = (t>>3)+(t>>2)`, sign = bit 3, clamp to 16 bits, index clamp 0..88. Keep this quirk.
 

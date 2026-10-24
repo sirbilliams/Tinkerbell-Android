@@ -53,6 +53,9 @@ __attribute__((weak)) int tb_game_main(int, char **) {
     return 0;
 }
 
+// Lane B's desktop test entry (platform/media_test.cpp): returns -1 unless TB_TEST_SOUND / TB_TEST_MOVIE is set.
+int tb_test_hook(int, char **) __attribute__((weak));
+
 extern "C" int main(int argc, char **argv) {
     const char *e;
     if ((e = getenv("TB_GAME_DIR")) && *e) g_game_dir = e;
@@ -68,7 +71,8 @@ extern "C" int main(int argc, char **argv) {
     g_logf = fopen(g_log_path.c_str(), "w");
     tb_log("Tinker Bell port: game dir %s", g_game_dir.empty() ? "." : g_game_dir.c_str());
     if (!tb_exe_load()) return 1;
-    int rc = tb_game_main(argc, argv);
+    int rc = tb_test_hook ? tb_test_hook(argc, argv) : -1;
+    if (rc < 0) rc = tb_game_main(argc, argv);
     tb_log("CLEAN EXIT (%d)", rc);
     if (g_logf) fclose(g_logf);
     return rc;
