@@ -103,7 +103,9 @@ struct TbDC {
 
 namespace {
 
-TbGdiObj g_stock[18];
+// port: built on first use (a static Font in another file can ask for a stock object before this file's statics exist)
+TbGdiObj *stock_array() { static TbGdiObj a[18]; return a; }
+#define g_stock stock_array()
 bool g_stock_init = false;
 
 int ctz32(uint32_t v) { int n = 0; if (!v) return 0; while (!(v & 1)) { v >>= 1; n++; } return n; }

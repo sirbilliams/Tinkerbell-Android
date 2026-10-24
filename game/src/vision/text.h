@@ -74,10 +74,46 @@ public:
     void draw() override;                            // +0x38 0x412870: f78 = 0 filled, > 0 inner frame, < 0 outer frame
 };
 // 0x412db0: fills (or alpha-blends, a < 255) a rectangle of RGB565 pixels; x, y from the canvas's top-left.
-void fill_rect565(int x, int y, int w, int h, int r, int g, int b, int a, int cw, int ch, uint16_t *pixels, int pitch);
+void fill_rect565(int x, int y, int w, int h, int c0, int c1, int c2, int a, int cw, int ch, uint16_t *pixels, int pitch);
 
 // ---------------------------------------------------------------- TextField (vtable 0x5132a8) + Impl (0x51338c)
-class TextFieldImpl;
+class TextField;
+// Impl@TextField (vtable 0x51338c, 0x230 bytes): the Task that blinks the caret, plus the Mouse and Keyboard
+// services (its own clients) that edit the text. Offsets are the exe's.
+class TextFieldImpl : public Task {
+public:
+    TextFieldImpl(TextField *owner, Graphic *caret);     // 0x401740
+    ~TextFieldImpl() override;                           // 0x401940
+    void run() override;                                 // +0x28 0x402670: blinks the caret
+    void notify(Service *s) override;                    // +0x20 0x402720
+    void click();                                        // 0x401a30
+    void key();                                          // 0x401c10
+    bool moveRight();                                    // 0x402050
+    bool moveLeft();                                     // 0x401ff0
+    void clampCol();                                     // 0x401fb0
+    bool atEnd();                                        // 0x401f40
+    void reflow(bool typed);                             // 0x402160
+    bool accepts(int c);                                 // 0x4024a0
+    void insert(int c);                                  // 0x402560
+    void eraseAt(int idx);                               // 0x424250
+    TextField *owner;                                    // +0xc0
+    Mouse mouse;                                         // +0xc4
+    Keyboard kbd;                                        // +0xf8
+    Text text;                                           // +0x130
+    int prevLen = 0;                                     // +0x1f0
+    bool active_ = false;                                // +0x1f4
+    int blink = 500;                                     // +0x1f8 ms (port: the value was not recoverable from the decompile)
+    bool ownsCaret = true;                               // +0x1fc
+    Graphic *caret;                                      // +0x200
+    bool notifyClient = false;                           // +0x21c
+    int line = 0, col = 0, anchor = 0;                   // +0x20c +0x210 +0x214
+    bool multiline = false;                              // +0x218
+    bool focus = true;                                   // +0x219
+    bool centered = false;                               // +0x220: the text is centred in the box
+    int filter = 0;                                      // +0x224: 0 any, 1 digits, 2 alphanumeric, 3 alphanumeric and '*'
+    int maxLen = -1;                                     // +0x228
+};
+
 class TextField : public Graphic {
 public:
     TextField();                                     // 0x4011b0

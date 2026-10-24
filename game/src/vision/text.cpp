@@ -287,4 +287,331 @@ bool Text::charPos(int line, int col, int *outx, int *outy) {   // 0x4138a0: x o
     return true;
 }
 
+// ---------------------------------------------------------------- Rectangle
+Rectangle::Rectangle(int x_, int y_, int z_, int w_, int h_, bool vis, uint32_t col)   // 0x4011b0 (the caret)
+    : Graphic(x_, y_, z_, w_, h_, 0, vis, col, 0, 0, 0, -1, 0xffff00ffu) {}
+
+// 0x412db0: clipped to the canvas (cw x ch, stride pitch); a < 255 blends with the pixel's own channels.
+void fill_rect565(int x, int y, int w, int h, int c0, int c1, int c2, int a, int cw, int ch, uint16_t *pixels, int pitch) {
+    int right = x + w, bottom = y + h;
+    if (x < 0) { x = 0; w = right; }
+    if (cw <= right) w += cw - right;
+    if (w <= 0) return;
+    if (y < 0) { y = 0; h = bottom; }
+    if (ch < bottom) h += ch - bottom;
+    if (h <= 0) return;
+    a &= 0xff; c0 &= 0xff; c1 &= 0xff; c2 &= 0xff;
+    // c2 is the red (the low byte of the 0x00BBGGRR word), c1 green, c0 blue
+    uint16_t full = (uint16_t)(((c2 >> 3) << 11) | ((c1 >> 2) << 5) | (c0 >> 3));
+    uint16_t *row = pixels + (size_t)y * pitch + x;
+    if (a == 0xff) {
+        for (int r = 0; r < h; r++, row += pitch)
+            for (int c = 0; c < w; c++) row[c] = full;
+        return;
+    }
+    // the exe premultiplies each channel as (c * a) & 0xff, converts, then multiplies by a again (a quirk kept)
+    int pc2 = (c2 * a) & 0xff, pc1 = (c1 * a) & 0xff, pc0 = (c0 * a) & 0xff;
+    uint32_t pr = (uint32_t)((pc2 >> 3) << 11), pg = (uint32_t)((pc1 >> 2) << 5), pb = (uint32_t)(pc0 >> 3);
+    uint32_t ia = 0xff - a;
+    for (int r = 0; r < h; r++, row += pitch)
+        for (int c = 0; c < w; c++) {
+            uint32_t d = row[c];
+            row[c] = (uint16_t)(((((d & 0x1f) * ia + pb * a) >> 8) & 0x1f) | ((((d & 0x7e0) * ia + pg * a) >> 8) & 0x7e0) |
+                                ((((d & 0xf800) * ia + pr * a) >> 8) & 0xf800));
+        }
+}
+
+void Rectangle::draw() {                             // 0x412870
+    Canvas *cv = current_canvas();                   // 0x41eaa0
+    int cw = cv->w, ch = cv->h;
+    uint8_t a = (uint8_t)(color >> 24);              // +0x73
+    if (a == 0 || !cv->pixels) return;
+    int c0 = color & 0xff, c1 = (color >> 8) & 0xff, c2 = (color >> 16) & 0xff;     // +0x70, +0x71, +0x72
+    int f = f78;
+    uint16_t *px = cv->pixels; int pt = cv->pitch;
+    auto fill = [&](int fx, int fy, int fw, int fh) { fill_rect565(fx, fy, fw, fh, c0, c1, c2, a, cw, ch, px, pt); };
+    int L = -((w & 1) + w / 2) + x + cw / 2;         // left edge (the exe's odd-size adjustment)
+    int T = -((h & 1) + h / 2) + y + ch / 2;
+    if (f == 0) { fill(L, T, w, h); return; }
+    if (f > 0) {                                     // a frame inside
+        fill(L, T, w, f);
+        fill(L, h / 2 + ch / 2 - f + y, w, f);
+        fill(L, ch / 2 + f + (-(h & 1) - h / 2) + y, f, h - 2 * f);
+        fill(cw / 2 + w / 2 - f + x, ch / 2 + f + (-(h & 1) - h / 2) + y, f, h - 2 * f);
+        return;
+    }
+    int t = -f;                                      // a frame outside; f78 is flipped while drawing, then restored
+    f78 = t;
+    fill(L - t, T - t, w + 2 * t, t);
+    fill(L - t, h / 2 + ch / 2 + y, w + 2 * t, t);
+    fill(L - t, T, t, h);
+    fill(cw / 2 + w / 2 + x, T, t, h);
+    f78 = -t;
+}
+
+// ---------------------------------------------------------------- Joystick
+static Node &joystick_root() { static Node n; return n; }      // 0x5a6c50
+Node *Joystick::root() { return &joystick_root(); }            // 0x48ed60
+
+// ---------------------------------------------------------------- Impl@TextField
+TextFieldImpl::TextFieldImpl(TextField *o, Graphic *c)         // 0x401740
+    : Task(nullptr), owner(o), mouse(), kbd(), text(), caret(c) {
+    text.font = &default_font();
+    text.f_a8 = default_font().f38;
+    text.valign = -1; text.halign = -1;              // +0x1dc +0x1e0
+    mouse.setClient(this);                           // 0x41f290
+    kbd.setClient(this);
+    text.detach();                                   // 0x412200
+    caret->visible = false;
+    line = -1; col = -1;                             // +0x20c +0x210 start at -1 (0x1dc.. in the decompile), then reset by setText
+    line = 0; col = 0;                               // port: the exe leaves these to the first setText / click
+}
+TextFieldImpl::~TextFieldImpl() {                    // 0x401940
+    if (ownsCaret && caret) delete caret;
+    kbd.deactivate();
+    mouse.deactivate();
+}
+
+void TextFieldImpl::run() {                          // 0x402670: toggles the caret every `blink` ms
+    wait(1);
+    for (;;) {
+        caret->visible = !caret->visible;            // port: the exe's other branch (0x403d60) is for a subclassed caret
+        wait((uint32_t)blink);
+    }
+}
+
+void TextFieldImpl::notify(Service *s) {             // 0x402720
+    if (s == &mouse && g_mouse.ldown) click();
+    if (s == &kbd) {
+        key();
+        if (notifyClient) {                          // 0x41f1f0: tell this service's own client
+            if (client) { client->notify(this); client->notify2(this); }
+            else vision_log("Null client for service %s.", name());
+        }
+    }
+}
+
+void TextFieldImpl::eraseAt(int idx) {               // 0x424250
+    if (idx >= 0 && idx < (int)text.str.size()) { text.str.erase((size_t)idx, 1); text.dirty(); }
+}
+bool TextFieldImpl::moveLeft() {                     // 0x401ff0
+    int old = col;
+    col--;
+    if (col < 0) {
+        if (line < 1) { col = old; return false; }
+        line--;
+        int s, l;
+        text.lineInfo(line, &s, &l);
+        col = l;
+    }
+    anchor = col;
+    return true;
+}
+bool TextFieldImpl::atEnd() {                        // 0x401f40: the caret is at the end of its line
+    int idx = text.index(line, col);
+    if (idx != -1) {
+        int s, l;
+        text.lineInfo(line, &s, &l);
+        if (col < l) return false;
+    }
+    return true;
+}
+bool TextFieldImpl::moveRight() {                    // 0x402050
+    if (line + 1 == text.lineCount()) {
+        if (text.index(line, col) == -1) return false;
+        int s, l;
+        text.lineInfo(line, &s, &l);
+        if (l <= col) return false;
+    }
+    int idx = text.index(line, col);
+    if (idx != -1) {
+        int s, l;
+        text.lineInfo(line, &s, &l);
+        if (col < l) { col++; anchor = col; return true; }
+    }
+    if (line + 1 == text.lineCount()) return false;
+    line++; col = 0; anchor = col;
+    return true;
+}
+void TextFieldImpl::clampCol() {                     // 0x401fb0
+    int s, l;
+    text.lineInfo(line, &s, &l);
+    if (l < col) col = l;
+}
+
+// 0x402160: after typing (or deleting), keep the text inside the box. port: simplified; the exe also breaks a
+// too-wide line at its last space and replays the characters after it.
+void TextFieldImpl::reflow(bool typed) {
+    (void)typed;
+    if (text.maxLineWidth() <= owner->w) return;
+    if (multiline && text.totalHeight() < owner->h) {
+        // break the line at the last space before the caret, else at the caret
+        int idx = text.index(line, col);
+        int brk = idx < 0 ? (int)text.str.size() : idx;
+        size_t sp = text.str.rfind(' ', brk > 0 ? (size_t)brk - 1 : 0);
+        int s, l;
+        text.lineInfo(line, &s, &l);
+        if (sp != std::string::npos && (int)sp >= s) {
+            text.str[sp] = '\n';
+            line++; col = brk - (int)sp - 1; anchor = col;
+        } else {
+            text.str.insert((size_t)brk, 1, '\n');
+            line++; col = 0; anchor = 0;
+        }
+        text.dirty();
+        return;
+    }
+    // it does not fit and cannot wrap: the typed character is taken back
+    if (moveLeft()) eraseAt(text.index(line, col));
+    reflow(false);
+}
+
+bool TextFieldImpl::accepts(int c) {                 // 0x4024a0
+    if (c == 0xd || c == 10) return multiline;
+    if (c == 0x20) return true;
+    bool digit = c >= '0' && c <= '9', alpha = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
+    switch (filter) {
+    case 0: return true;
+    case 1: return digit;
+    case 2: return digit || alpha;
+    case 3: return digit || alpha || c == '*';
+    default: filter = 0; return true;
+    }
+}
+
+void TextFieldImpl::insert(int c) {                  // 0x402560
+    if (!accepts(c)) return;
+    if (maxLen != -1 && maxLen <= (int)text.str.size()) return;
+    if (c == 0xd) c = 10;
+    if ((!multiline || text.totalHeight() >= owner->h) && c == 10) return;
+    int idx = text.index(line, col);
+    if (idx == -1) text.str.push_back((char)c);
+    else text.str.insert((size_t)idx, 1, (char)c);
+    text.dirty();
+    if (c == 10) { col = 0; line++; anchor = col; return; }
+    col++;
+    reflow(true);
+    anchor = col;
+}
+
+void TextFieldImpl::click() {                        // 0x401a30
+    if (!owner->hit(g_mouse.x, g_mouse.y)) {         // a click outside gives the focus away
+        if (focus) {
+            kbd.deactivate();
+            owner->impl->deactivate();
+            owner->impl->caret->visible = false;
+        }
+        return;
+    }
+    if (!focus && !kbd.active()) return;
+    int n = text.lineCount();
+    int L = n < 1 ? 0 : n - 1, s = 0, l = 0;
+    if (!text.lineInfo(L, &s, &l)) l = 0;
+    int C = l < 1 ? 0 : l;
+    line = L; col = C; anchor = C;
+    int hl, hc;
+    if (text.hitTest(g_mouse.x, g_mouse.y, &hl, &hc)) { line = hl; col = hc; }
+    if (line >= text.lineCount()) line = text.lineCount() - 1;
+    if (line < 0) line = 0;
+    text.lineInfo(line, &s, &l);
+    if (col > l) col = l;
+    anchor = col;
+    prevLen = (int)text.str.size();
+    caret->load();
+    caret->visible = true;
+    kbd.activate();
+    activate();
+}
+
+void TextFieldImpl::key() {                          // 0x401c10
+    if (!g_key.chr) {
+        if (!g_key.down) return;
+        switch (g_key.vk) {
+        case 0x26:                                   // up
+            if (line != 0) { line--; col = anchor; clampCol(); }
+            break;
+        case 0x28:                                   // down
+            if (line + 1 != text.lineCount()) { line++; col = anchor; clampCol(); }
+            break;
+        case 0x27: moveRight(); break;
+        case 0x25: moveLeft(); break;
+        case 8:                                      // backspace
+            if (moveLeft()) { eraseAt(text.index(line, col)); reflow(false); }
+            break;
+        case 0x2e:                                   // delete
+            if (!(line + 1 == text.lineCount() && atEnd())) { eraseAt(text.index(line, col)); reflow(false); }
+            break;
+        case 0x23: {                                 // end
+            int s, l;
+            text.lineInfo(line, &s, &l);
+            col = l; anchor = col;
+            break;
+        }
+        case 0x24: col = 0; anchor = 0; break;       // home
+        }
+        return;
+    }
+    int c = (int)g_key.vk;
+    if ((c >= 0x20 && c < 0x7f) || c >= 0xa0 || (c == 0xd && !owner->enter_ends)) insert(c);   // isprint / Enter
+}
+
+// ---------------------------------------------------------------- TextField
+TextField::TextField()                                // 0x4011b0
+    : Graphic(0, 0, 0, 0, 0, 0, true, 0xff000000u, 0, 0, 0, -1, 0xffff00ffu) {
+    impl = new TextFieldImpl(this, new Rectangle(0, 0, 0, 2, 25, true, 0xff000000u));
+    impl->prevLen = (int)impl->text.str.size();      // 0x424540
+    impl->prevLen = 0;
+}
+TextField::~TextField() { delete impl; }              // 0x401320
+void TextField::hide() {                              // 0x4013a0
+    impl->kbd.deactivate();
+    impl->deactivate();
+    impl->caret->visible = false;
+}
+void TextField::setText(const char *s) {              // 0x4013e0
+    impl->line = 0; impl->col = 0;
+    impl->text.str.clear();
+    for (; s && *s; s++) impl->insert((unsigned char)*s);
+    impl->prevLen = (int)impl->text.str.size();
+}
+bool TextField::focused() { return impl->kbd.active(); }    // 0x401470
+const char *TextField::getText() { return impl->text.str.empty() ? "" : impl->text.str.c_str(); }   // 0x401490
+void TextField::load() {                              // 0x4014b0
+    setHit(hitmode, false);
+    impl->text.load();
+    impl->active_ = true;
+    impl->focus = true;
+    impl->kbd.deactivate();
+    impl->deactivate();
+    impl->caret->visible = false;
+    impl->mouse.activate();
+}
+void TextField::unload() {                            // 0x401540
+    Graphic::unload();
+    impl->kbd.deactivate();
+    impl->deactivate();
+    impl->caret->visible = false;
+    impl->caret->unload();
+    impl->focus = false;
+    impl->active_ = false;
+}
+void TextField::draw() {                              // 0x4015b0
+    TextFieldImpl *i = impl;
+    int cx, cy;
+    if (!i->text.charPos(i->line, i->col, &cx, &cy)) { cy = i->text.y; cx = i->text.x - w / 2; }
+    i->caret->x = cx; i->caret->y = cy;
+    i->text.measure();
+    i->text.x = i->centered ? i->text.maxLineWidth() / 2 + (x - w / 2) : x;
+    i->text.y = i->multiline ? i->text.totalHeight() / 2 + (y - h / 2) : y;
+    i->text.color = color;
+    // port: the exe's Text::draw finds the DC of a mode-2 canvas; a TextField is a mode-1 graphic, so switch here
+    canvas_set_mode(2);
+    i->text.draw();
+    canvas_set_mode(1);
+    if (i->caret->visible) {
+        i->caret->color = color;
+        i->caret->draw();
+    }
+}
+
 }  // namespace Vision
