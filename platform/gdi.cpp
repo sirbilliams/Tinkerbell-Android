@@ -8,6 +8,7 @@
 #include <vector>
 #include <algorithm>
 #include <string>
+#include <strings.h>
 
 #define STB_TRUETYPE_IMPLEMENTATION
 #define STBTT_STATIC
@@ -25,6 +26,8 @@ TB_INCBIN(tb_font_regular, "LiberationSans-Regular.ttf")
 TB_INCBIN(tb_font_bold, "LiberationSans-Bold.ttf")
 TB_INCBIN(tb_font_italic, "LiberationSans-Italic.ttf")
 TB_INCBIN(tb_font_bolditalic, "LiberationSans-BoldItalic.ttf")
+TB_INCBIN(tb_font_mono, "LiberationMono-Regular.ttf")       // for the fixed-pitch stock fonts, Courier, Fixedsys...
+TB_INCBIN(tb_font_monobold, "LiberationMono-Bold.ttf")
 
 namespace {
 
@@ -35,11 +38,11 @@ struct Face {
     bool ok = false;
 };
 
-Face g_faces[4];   // regular, bold, italic, bold italic
+Face g_faces[6];   // regular, bold, italic, bold italic, mono, mono bold
 
-Face &face(bool bold, bool italic) {
-    static const uint8_t *data[4] = { tb_font_regular, tb_font_bold, tb_font_italic, tb_font_bolditalic };
-    int i = (bold ? 1 : 0) + (italic ? 2 : 0);
+Face &face(bool bold, bool italic, bool mono) {
+    static const uint8_t *data[6] = { tb_font_regular, tb_font_bold, tb_font_italic, tb_font_bolditalic, tb_font_mono, tb_font_monobold };
+    int i = mono ? 4 + (bold ? 1 : 0) : (bold ? 1 : 0) + (italic ? 2 : 0);
     Face &f = g_faces[i];
     if (!f.ok) {
         f.ok = stbtt_InitFont(&f.info, data[i], stbtt_GetFontOffsetForIndex(data[i], 0)) != 0;
@@ -107,7 +110,11 @@ int ctz32(uint32_t v) { int n = 0; if (!v) return 0; while (!(v & 1)) { v >>= 1;
 int pop32(uint32_t v) { int n = 0; while (v) { n += v & 1; v >>= 1; } return n; }
 
 void layoutFont(TbGdiObj *f) {
-    Face &fc = face(f->lf.lfWeight >= 600, f->lf.lfItalic != 0);
+    // fixed pitch (the fixed stock fonts, "Courier ...", "Fixedsys", "Terminal", "Lucida Console") -> Liberation Mono
+    const char *fn = f->lf.lfFaceName;
+    bool mono = (f->lf.lfPitchAndFamily & 3) == 1 || !strncasecmp(fn, "Courier", 7) || !strncasecmp(fn, "Fixedsys", 8) ||
+                !strncasecmp(fn, "Terminal", 8) || !strncasecmp(fn, "Lucida Console", 14);
+    Face &fc = face(f->lf.lfWeight >= 600, f->lf.lfItalic != 0, mono);
     f->face = &fc;
     int h = f->lf.lfHeight;
     // lfHeight < 0: character (em) height in pixels; > 0: cell height; 0: a default
@@ -144,7 +151,9 @@ void initStock() {
         if (i == 15) continue;
         TbLogFont lf; memset(&lf, 0, sizeof lf);
         lf.lfHeight = -13; lf.lfWeight = 400; lf.lfCharSet = 0;
-        strncpy(lf.lfFaceName, "Arial", sizeof lf.lfFaceName - 1);
+        bool fixed = i == TB_OEM_FIXED_FONT || i == TB_ANSI_FIXED_FONT || i == TB_SYSTEM_FIXED_FONT;
+        strncpy(lf.lfFaceName, fixed ? "Fixedsys" : "Arial", sizeof lf.lfFaceName - 1);
+        if (fixed) lf.lfPitchAndFamily = 1;
         g_stock[i].kind = TbGdiObj::FONT; g_stock[i].stock = true; g_stock[i].lf = lf;
         layoutFont(&g_stock[i]);
     }

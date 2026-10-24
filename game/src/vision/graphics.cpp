@@ -1,5 +1,6 @@
 // Screen / Layer / Graphic / Image, the canvas and the sprite blitter, and the Screen service (lane A).
 #include "engine.h"
+#include "text.h"
 #include "tb.h"
 #include "../../../platform/ddraw.h"
 #include <string.h>
@@ -25,12 +26,20 @@ void lock_canvas() {                     // 0x40e390
         g_canvas->surface->Lock(&g_canvas->pixels, &pitch);
         g_canvas->pitch = pitch / 2;
     }
-    // mode 2 (GetDC on the surface, SetViewportOrgEx to the centre) is lane C's text path (tb_gdi_surface_dc)
+    else if (g_canvas_mode == 2) canvas_dc_begin(g_canvas);   // GetDC on the surface, SetViewportOrgEx to the centre (text.cpp)
 }
 void unlock_canvas() {                   // 0x40e620
     if (!g_canvas->surface) return;
     if (g_canvas_mode == 1) { g_canvas->surface->Unlock(); g_canvas->pixels = nullptr; }
+    else if (g_canvas_mode == 2) canvas_dc_end();            // ReleaseDC (vtbl +0x68)
     g_canvas_mode = 1;
+}
+// port (lane C): switch the canvas between pixels (1) and DC (2) from inside a draw, as 0x40e680 does between graphics
+void canvas_set_mode(int m) {
+    if (m == g_canvas_mode) return;
+    unlock_canvas();
+    g_canvas_mode = m;
+    lock_canvas();
 }
 
 // 0x40dc90 Screen service init: DirectDraw, 16-bit mode, primary + back buffer
@@ -217,7 +226,7 @@ void Image::draw() {                     // 0x4179b0 -> 0x40d620
 // opaque/alpha/translucent x scaled). They are written here as one row decoder (the record's own encoding, as
 // formats.md and 0x417850/0x417920 describe) feeding one span writer that does the same per-pixel arithmetic:
 // opaque copy, palette lookup for 8 bpp, alpha blend (a == 0xff copies), translucency blend, and the 16.16
-// nearest-neighbour scaling of the scaled loops. Rotation (90/180/270, through a temporary buffer) is a TODO.
+// nearest-neighbour scaling of the scaled loops. Rotation (90/180/270) rotates the decoded rows (lane C).
 namespace {
 const uint32_t RM = 0xf800, GM = 0x7e0, BM = 0x1f;   // 0x5a67f4 / 0x5a67ec / 0x5a67e8
 
@@ -302,15 +311,46 @@ void blit(const BlitParams &p, uint16_t *dst, int dw, int dh, int pitch) {
         }
         it = g_cache.insert(std::make_pair(pm, d)).first;
     }
-    const Decoded &d = it->second;
-    if (p.rotation != 0) { static bool once; if (!once) { once = true; vision_log("port: TODO rotated sprites (%s)", pm->name()); } }
+    const Decoded *dp = &it->second;
+    Decoded rd;
     int ow = p.w, oh = p.h;                  // drawn size; != the pixelmap's size = the scaled loops
+    if (p.rotation != 0) {
+        // 0x40cb99: 90 (0x5a), 180 (0xb4) and 270 (0x10e) degrees clockwise; any other angle draws nothing.
+        int rot = p.rotation;
+        if (rot != 90 && rot != 180 && rot != 270) return;
+        // 0x40ccb1: a sprite with the alpha flag (0x10) in the raw / RLE encodings is not drawn rotated.
+        int enc = pm->kind & ~0x30;
+        if ((pm->kind & 0x10) && enc < 3 && (pm->bpp == 8 || pm->bpp == 16)) return;
+        // The exe decodes the sprite into a temporary buffer through the rotating destination strides
+        // (0x566548 / 0x566554, set at 0x40cc26..0x40cca4) and then draws that as a raw 16-bit image.
+        // port: rotate the decoded rows; the transparent pixels of RLE / escape sprites stay transparent
+        // (the exe's temporary buffer keeps whatever it held there).
+        const Decoded &src = *dp;
+        int W = src.w, H = src.h;
+        bool swap = rot != 180;
+        rd.w = swap ? H : W; rd.h = swap ? W : H;
+        rd.c.assign((size_t)W * H, 0); rd.a.assign((size_t)W * H, 0);
+        for (int y = 0; y < H; y++)
+            for (int x = 0; x < W; x++) {
+                int dx, dy;                                  // where source (x, y) lands
+                if (rot == 90) { dx = H - 1 - y; dy = x; }       // row 0 -> the rightmost column, top to bottom
+                else if (rot == 180) { dx = W - 1 - x; dy = H - 1 - y; }
+                else { dx = y; dy = W - 1 - x; }                 // 270: row 0 -> the leftmost column, bottom to top
+                rd.c[(size_t)dy * rd.w + dx] = src.c[(size_t)y * W + x];
+                rd.a[(size_t)dy * rd.w + dx] = src.a[(size_t)y * W + x];
+            }
+        dp = &rd;
+        if (swap) { ow = p.h; oh = p.w; }                    // 0x40c9ff: the swapped extents
+    }
+    const Decoded &d = *dp;
+    int pmw = d.w, pmh = d.h;
+    if (pmw == 0 || pmh == 0) return;
     int x0 = (dw - ow) / 2 + p.x, y0 = (dh - oh) / 2 + p.y;   // centred on the canvas (0x56657c / 0x566580)
     int t = p.translucency;
     // 16.16 steps of the scaled loops (0x566548 / 0x566554)
-    uint32_t sx = ow == 1 || pm->w == 1 ? 0 : (uint32_t)(((ow - 1) / 2 - 0x10000 + pm->w * 0x10000) / (ow - 1));
-    uint32_t sy = oh == 1 || pm->h == 1 ? 0 : (uint32_t)(((oh - 1) / 2 - 0x10000 + pm->h * 0x10000) / (oh - 1));
-    bool scaled = ow != pm->w || oh != pm->h;
+    uint32_t sx = ow == 1 || pmw == 1 ? 0 : (uint32_t)(((ow - 1) / 2 - 0x10000 + pmw * 0x10000) / (ow - 1));
+    uint32_t sy = oh == 1 || pmh == 1 ? 0 : (uint32_t)(((oh - 1) / 2 - 0x10000 + pmh * 0x10000) / (oh - 1));
+    bool scaled = ow != pmw || oh != pmh;
     for (int r = 0; r < oh; r++) {
         int dy = y0 + r;
         if (dy < 0 || dy >= dh) continue;
