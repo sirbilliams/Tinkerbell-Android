@@ -283,7 +283,9 @@ bool decode(const Pixelmap *pm, const Palette *pal, Decoded &d, bool as_alpha) {
             if (b == esc && p + 2 <= end) {
                 uint8_t v = p[0], cnt = p[1];
                 p += 2;
-                for (int k = 0; k < cnt && i < n; k++, i++) if (v != esc) px(i, &v);
+                // port: px() bounds-checks its source against the record's end, so a run value is passed as a one-byte
+                // source inside the record (p - 2), not a local
+                for (int k = 0; k < cnt && i < n; k++, i++) if (v != esc) px(i, p - 2);
             } else { px(i, &b); i++; }
         }
         return true;
