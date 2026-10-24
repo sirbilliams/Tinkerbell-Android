@@ -6,7 +6,7 @@
 - First APK (`latest` release) failed on the Thor at start: `dlopen failed: library "libavformat.so" not
   found` (the FFmpeg libs were packaged as lib<name>-<major>.so but their sonames are lib<name>.so). Fixed in
   ecaae33 (packaged under their sonames; CI now checks every NEEDED entry of the APK's native libs).
-  **First thing: check that CI run is green, then ask Bill to retest the new `latest` APK on the Thor.**
+  **Confirmed by Bill on the Thor (Oct 24, 13:08): the fixed APK imports the ISO and plays bumper -> intro -> sign-in room (25%).**
   Nothing else has been run on a device yet (importer, touch, audio, movies).
 - Original exe under Wine: refuses with "CS:No disc inserted." (the copy protection's disc check) even with
   the ISO as a cdrom drive; loop mounting isn't allowed in this sandbox. Don't work around it. No reference
