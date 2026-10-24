@@ -88,7 +88,11 @@ jobs:
         working-directory: android
         run: |
           chmod +x gradlew
-          ./gradlew --no-daemon --stacktrace assembleDebug
+          ./gradlew --no-daemon --stacktrace assembleDebug 2>&1 | tee ../gradle-build.log || {
+            # the runner logs are not readable from everywhere: put the errors into an annotation too
+            { grep -nE "error|Error|FAILED|What went wrong|undefined|not found|fatal" -A2 ../gradle-build.log | head -n 40; } | tr '\n' '|' | cut -c1-3500 | sed 's/^/::error::/'
+            exit 1
+          }
 
       - name: Check the APK carries FFmpeg
         run: unzip -l android/app/build/outputs/apk/debug/app-debug.apk | grep -E "lib/arm64-v8a/lib(avcodec|avformat|swscale|swresample|avutil)" 
