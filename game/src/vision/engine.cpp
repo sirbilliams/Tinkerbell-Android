@@ -99,14 +99,20 @@ void Service::deactivate() {                                    // 0x41f260
     if (!tb_exiting() && node) Gorilla::tb_unlink_and_delete(node);
 }
 
+Service *g_modal_client = nullptr;                              // 0x5a747c
 void dispatch(Node &root) {                                     // 0x41f390
     g_input_handled = true;
     std::vector<Service *> list;                                // collected from the last to the first
     for (Node *n = root.last; n; n = n->prev) list.push_back((Service *)n->obj);
     for (size_t i = 0; i < list.size(); i++) {
         Service *s = list[i];
+        if (g_modal_client && s->client != g_modal_client) {    // port: modal branch of 0x41f433..0x41f48b (lane B, Reminder)
+            if (!g_input_handled) break;
+            continue;
+        }
         if (s->client) { s->client->notify(s); s->client->notify2(s); }
         else vision_log("Null client for service %s.", s->name());
+        if (g_modal_client) break;                              // only the first match
         if (!g_input_handled) break;
     }
 }

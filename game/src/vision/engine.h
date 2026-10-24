@@ -60,6 +60,7 @@ public:
 };
 Node &service_kinds();                               // 0x41f040: the registry 0x5a7480
 
+extern Service *g_modal_client;                      // 0x5a747c (set by 0x41f370): when set, dispatch() only reaches the first service whose client it is
 // Event dispatch to the active services of a list (0x41f390): client->notify, notify2.
 void dispatch(Node &root);
 
