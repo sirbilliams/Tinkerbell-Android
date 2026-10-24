@@ -96,8 +96,26 @@ jobs:
             exit 1
           }
 
-      - name: Check the APK carries FFmpeg
-        run: unzip -l android/app/build/outputs/apk/debug/app-debug.apk | grep -E "lib/arm64-v8a/lib(avcodec|avformat|swscale|swresample|avutil)" 
+      # Every library our native libs need must be in the APK (by its exact name) or be an Android system
+      # library; a name mismatch only shows up on the device as "dlopen failed: library ... not found".
+      - name: Check the APK's native dependencies
+        run: |
+          set -euo pipefail
+          rm -rf apkcheck && mkdir apkcheck && cd apkcheck
+          unzip -q ../android/app/build/outputs/apk/debug/app-debug.apk 'lib/arm64-v8a/*'
+          ls lib/arm64-v8a
+          RE="$ANDROID_HOME/ndk/26.3.11579264/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf"
+          SYS="libc.so libm.so libdl.so liblog.so libandroid.so libz.so libGLESv1_CM.so libGLESv2.so libGLESv3.so libEGL.so libOpenSLES.so libaaudio.so libmediandk.so libjnigraphics.so libvulkan.so"
+          bad=0
+          for f in lib/arm64-v8a/*.so; do
+            for n in $("$RE" -d "$f" | sed -n 's/.*(NEEDED).*\[\(.*\)\]/\1/p'); do
+              if [ ! -f "lib/arm64-v8a/$n" ] && ! echo " $SYS " | grep -q " $n "; then
+                echo "::error::$(basename "$f") needs $n, which is not in the APK"; bad=1
+              fi
+            done
+          done
+          [ "$bad" = 0 ]
+          ls lib/arm64-v8a | grep -E "^lib(avcodec|avformat|swscale|swresample|avutil)\.so$"
 
       - name: Collect APK
         run: |

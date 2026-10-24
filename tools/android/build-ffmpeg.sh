@@ -3,7 +3,7 @@
 # the mov demuxer, the file protocol, the svq1 / rpza / pcm_s16be decoders, swscale and swresample.
 # Output (what android/app/jni/CMakeLists.txt and build.gradle use):
 #   android/app/jni/ffmpeg-inc/          headers
-#   android/app/jni/ffmpeg-libs/arm64-v8a/lib{avutil,swresample,swscale,avcodec,avformat}-N.so
+#   android/app/jni/ffmpeg-libs/arm64-v8a/lib{avutil,swresample,swscale,avcodec,avformat}.so (named by their sonames)
 #   android/app/src/main/assets/licenses/FFmpeg-LGPL-2.1.txt
 # The workflow caches android/app/jni/ffmpeg-inc + ffmpeg-libs, keyed on this script's and deps.lock's hash.
 # Needs ANDROID_HOME with ndk;26.3.11579264 installed (or ANDROID_NDK_HOME).
@@ -47,19 +47,16 @@ cd "$SRC"
     --enable-protocol=file --enable-demuxer=mov \
     --enable-decoder=svq1 --enable-decoder=rpza --enable-decoder=pcm_s16be \
     --extra-cflags="-O2 -fPIC"
-# Android's loader wants plain lib<name>-<major>.so names that can sit in an APK (no libfoo.so.60 symlinks)
-cat >> ffbuild/config.mak <<'MAK'
-SLIBNAME_WITH_MAJOR=$(SLIBPREF)$(FULLNAME)-$(LIBMAJOR)$(SLIBSUF)
-SLIB_INSTALL_NAME=$(SLIBNAME_WITH_MAJOR)
-SLIB_INSTALL_LINKS=
-MAK
+# FFmpeg's android target names each library by its soname (libavformat.so, no version suffix) and links
+# them to each other by those names, so they are installed and packaged under exactly those names: Android's
+# loader looks dependencies up by soname in the APK's lib folder. (Renaming them broke loading on the Thor.)
 make -j"$(nproc)"
 make install
 
 rm -rf "$JNI/ffmpeg-inc" "$JNI/ffmpeg-libs"
 mkdir -p "$JNI/ffmpeg-inc" "$LIBS"
 cp -r "$OUT/include/"* "$JNI/ffmpeg-inc/"
-cp "$OUT/lib/"lib*-[0-9]*.so "$LIBS/"
+for l in avutil swresample swscale avcodec avformat; do cp "$OUT/lib/lib$l.so" "$LIBS/"; done
 "$TC/bin/llvm-strip" --strip-unneeded "$LIBS"/*.so
 mkdir -p "$ROOT/android/app/src/main/assets/licenses"
 cp "$SRC/COPYING.LGPLv2.1" "$ROOT/android/app/src/main/assets/licenses/FFmpeg-LGPL-2.1.txt"
