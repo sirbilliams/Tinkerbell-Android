@@ -170,9 +170,15 @@ void Graphic::detach() {                 // 0x412200
 }
 void Graphic::dirty() { if (layer) layer->screen->dirty(); }   // +0x34 (0x412010)
 void Graphic::unload() {}
-void Graphic::setHit(int mode, bool f) { hitmode = mode; f90 = f; }   // 0x411e90 (the hit mask: port TODO)
-bool Graphic::hit(int px, int py) {      // 0x411ee0: the bounding box (the mask path 0x418910: port TODO)
-    return px >= left() && px < right() && py >= top() && py < bottom();
+// Graphic::setHit (0x411e90), Graphic::hit (0x411f90) and the mask (0x418910): game/src/vision/hitmask.cpp.
+bool Graphic::inBox(int px, int py) {    // 0x411ee0: the bounding box (inclusive, as the exe compares)
+    int l = left(), r = right(), t = top(), b = bottom();
+    if (rotation == 90 || rotation == 270) {          // 0x5a / 0x10e: w and h swap around the centre
+        int sx = layer ? layer->screen->x : 0, sy = layer ? layer->screen->y : 0;
+        l = x - (h >> 1) + sx; r = h + l;
+        t = y - (w >> 1) + sy; b = w + t;
+    }
+    return l <= px && px <= r && t <= py && py <= b;
 }
 int Graphic::left() { return x - (w >> 1) + (layer ? layer->screen->x : 0); }    // 0x411d90
 int Graphic::top() { return y - (h >> 1) + (layer ? layer->screen->y : 0); }     // 0x411dc0

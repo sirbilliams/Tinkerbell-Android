@@ -268,6 +268,13 @@ public:
     virtual void unload();                           // +0x40
     int left(); int top(); int right(); int bottom();   // +0x1c..+0x28
     void detach();                                   // 0x412200
+    bool inBox(int x, int y);                        // 0x411ee0
+    // The hit mask (+0x54, built by setHit through 0x4122a0 from the pixels that are not the colour key f8c).
+    // port: one byte per pixel instead of the exe's row runs (game/src/vision/hitmask.cpp).
+    virtual bool buildHitMask(std::vector<uint8_t> &, int &, int &) { return false; }
+    std::vector<uint8_t> hit_mask;
+    int hit_mw = 0, hit_mh = 0;
+    bool has_mask = false;
     Node *node = nullptr;                            // +0x24
     Layer *layer = nullptr;                          // +0x28
     int ox, oy, oz, ow, oh;                          // +0x30..+0x40
@@ -291,6 +298,7 @@ public:
     void draw() override;                            // 0x4179b0 -> 0x40d620
     void load() override;                            // 0x416f80
     void unload() override;                          // 0x417940
+    bool buildHitMask(std::vector<uint8_t> &m, int &w, int &h) override;   // port: from the sprite record
     Pixelmap *pixelmap = nullptr;                    // +0x98
     Palette *palette = nullptr;                      // +0x9c
     Alpha *alpha = nullptr;                          // +0xa0
