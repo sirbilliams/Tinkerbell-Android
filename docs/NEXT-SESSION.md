@@ -1,5 +1,16 @@
 # Next session
 
+## Latest (Oct 24, evening, ~28%)
+- Sign-in room reconstructed by the lead (game/src/scenes/signin.*, acts.*, vision/faderect.*): frames as save
+  slots, place/character/skill choice, Wendy with lip sync, idle prompts and blinking hints, basket delete,
+  Big Ben -> "london", map -> "map" (map only after the tutorials). ASan/UBSan clean from boot through a scripted
+  sign-in; Save\save5.txt written correctly. Leaving goes to "london", which isn't ported: the game stops with
+  "Scene london not available". **Next: the London scene (London_Scene@LondonScene and its Peter/Wendy states),
+  then the map.**
+- Test aid: TB_FAKE_INPUT="<frame>:click x,y;<frame>:key vk" (platform/dinput.cpp). `tinkerbell signin` starts in
+  the room. Clicks used: green frame 158,56; London 514,69; Hook 161,287; beginner 186,395; Big Ben 509,337.
+- Agent A stalled for 90 min on this scene (no code); keep agent tasks small with a commit every ~30 min.
+
 ## State at the end of session 1 (Oct 24, 2026, ~20% to goal)
 - `main` = `integ`: boots on its own Disney bumper -> London intro (title) -> sign-in room on the desktop,
   ASan/UBSan clean over 3,500 frames. The sign-in room is drawn but not interactive yet.
