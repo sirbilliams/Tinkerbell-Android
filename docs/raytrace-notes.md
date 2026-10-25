@@ -66,3 +66,12 @@ qsort 0x4f54fc), and for the +0x578 entries at +0x57c (two end points each, +0x8
   points (0x42df80), clips (0x42f9f0), fills a trapezoid (0x41eae0) with the current animation frame. Constants
   0x513dc8, 0x513d90, 0x513da4, 0x513dc0 (double) still to read. So the engine is more than a column ray caster:
   the column cast (0x425f60) gives depth/visibility per column; textured walls are projected quads.
+- Sky 0x42a140 and ground 0x42c460 -> mode 0x42bf50 (speed rating >= 4; 0x4190c0 benchmark) are ported. Ground
+  table scale = (160 + eye) * 590 * 16; ground 16.16 coordinates, 128 x 128 grid of 256-texel tiles (.grn).
+- TrapezoidRenderer (0x4319a0, draw 0x431cc0) ported: vertical trapezoid, image stored sideways (row = strip,
+  texel 0 at the bottom), 18.14 fixed point; corners = c * scale * 0.01 + pos + half canvas.
+- project 0x42df80(x, h, z, k, *col, *row): col = view - ftol(n * atan2(dz,dx) / 2pi) - 320 wrapped to +-n/2;
+  row = ftol((1/cos(col angle)) * (1/dist) * ((160+eye)*590 - 24000 * (k*0.01) * h * 0.01)); 0x5a95b8 = 2pi
+  (float, static init 0x42cff0). Constants: 0x513dd8 1e-12 (zero cos), 0x513dd0 1e-11 (zero dist).
+- Wall object draw 0x42d000: 2 * rating slices of 60 degrees (0x513dc8), ray points at 100000 (0x513dc0);
+  still to port, with the clip 0x42f9f0 (1406 bytes).
