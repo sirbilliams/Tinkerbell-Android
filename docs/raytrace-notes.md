@@ -57,3 +57,12 @@ qsort 0x4f54fc), and for the +0x578 entries at +0x57c (two end points each, +0x8
   0x4265c0(far, near) draws the wall columns in that distance band; 0x42e120(obj) draws the object; a last
   0x4265c0 for the nearest band.
 - Columns: cast at 0 and w-1 for lists A and B, then subdivide(0, w-1, hitA0, hitB0, hitAlast, hitBlast).
+- Wall objects (0x42e5d0 ctor(name, anim prefix); 0xb4 bytes): +0x3c name, +0x64 animation prefix, +0x30 its
+  Animation (0x404c20), +0x8c..+0xa0 end points/height, +0xa4 ?, +0xa8 a key (drawn in order of it, 1e9 - key),
+  +0xac frame time, +0xb0 animated flag, +0x34 last frame time, +4..+0x28 up to ten linked wall objects.
+  0x4265c0(far, near): for each wall object whose distance (+0x968 pairs) is in the band, draw it (0x42d000) and
+  its linked ones in key order.
+- 0x42d000 draws a wall object as projected quads: steps the view in 2*0x419170() slices, projects the two end
+  points (0x42df80), clips (0x42f9f0), fills a trapezoid (0x41eae0) with the current animation frame. Constants
+  0x513dc8, 0x513d90, 0x513da4, 0x513dc0 (double) still to read. So the engine is more than a column ray caster:
+  the column cast (0x425f60) gives depth/visibility per column; textured walls are projected quads.
