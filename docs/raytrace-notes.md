@@ -37,3 +37,23 @@ Background panorama (+0x116c, a graphic): x scrolled by the view angle (+0x1178,
 drawn twice for wrap-around. 0x42c460() unless +0x1175; +0x1168 drawn.
 Sprites: distance from the camera (+0x568, +0x56c = camera x, z) for every object in +0x1148 (sorted with
 qsort 0x4f54fc), and for the +0x578 entries at +0x57c (two end points each, +0x8c..+0xa0).
+
+## Ported so far (game/src/raytrace/raytrace.*)
+- Seg (0x48), seg_init 0x427560, Column (0x30), cast 0x425f60 (+ fallback 0x4279a0), subdivide 0x426480,
+  Angle table 0x427130 (6*w entries = 60 degree view; [a, cos, sin, cos*4096, sin*4096]).
+- x87 precision: MSVC6 runs at 53 bits: values that stay on the FPU stack are doubles, stores to float fields
+  round. Follow the disassembly for every ftol (0x4f3948, truncation).
+
+## Findings
+- .rtc (walls): record header 0x58; u32 ntex; ntex x 40-byte texture names (0x426f00 finds each sp5 via ras_find;
+  +0x4bc[i] = mirrored flag); u32 ground texture (+0x4c0 -> +0x4d0 = its pixels, mask/shift fields
+  +0x4ec..+0x50c from its width); u32 sky texture (+0x518); then wall list A (+0x534) and list B (+0x538):
+  records {i32 tex (-1 ends, -2 invisible), f32 x1, z1, x2, z2, i32 base} (x1.. read into locals: order
+  [0x20],[0x24],[0x28],[0x1c] = x1, z1, x2, z2 per the 0x427560 call). Per textured wall a "wall object"
+  (0x42e5d0, 0xb4 bytes, name "wall_<tex>_<NN>", +0x578 count, +0x57c array) with its end points as floats
+  (+0x8c,+0x94 / +0x98,+0xa0) and height * 2.47 (+0x9c) - these are depth-sorted with the sprites.
+  Wall angle +0x20 = atan2(...) - pi*0.5.
+- Draw order (end of 0x426710): objects (+0x1148, 8-byte {obj, dist} pairs, qsort) far to near; between them
+  0x4265c0(far, near) draws the wall columns in that distance band; 0x42e120(obj) draws the object; a last
+  0x4265c0 for the nearest band.
+- Columns: cast at 0 and w-1 for lists A and B, then subdivide(0, w-1, hitA0, hitB0, hitAlast, hitBlast).
