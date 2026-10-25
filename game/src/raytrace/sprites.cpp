@@ -78,6 +78,39 @@ void Sprite3D::place() {
     y = (float)((sum / n) / 2);
 }
 
+// 0x42f350
+Attachment *Sprite3D::findAttached(const char *n) {
+    for (Attachment *a = attached; a; a = a->next)
+        if (strcasecmp(a->name.c_str(), n) == 0) return a;   // 0x423840 (case-insensitive)
+    return nullptr;
+}
+
+// 0x42f390: a new looping animation <prefix> (loaded, hit mode 1, stepped every 50 ms, on, any frame) at depth
+// `gz`, appended to the list.
+Attachment *Sprite3D::attach(const char *n, const char *p, int gz) {
+    if (findAttached(n)) return nullptr;
+    Attachment *a = new Attachment();
+    Vision::Animation *an = new Vision::Animation(p);
+    a->name = n;
+    a->period = 50;                                  // +0x184
+    a->frame = -1;                                   // +0x180
+    an->load();                                      // v15
+    an->mode = 1;                                    // +0x134 (+0x104 of the animation)
+    an->setHit(1, true);                             // v6
+    a->g = an;
+    a->last = Vision::frame_time();
+    a->on = true;                                    // +0x17c
+    an->z = gz;                                      // +0x60
+    if (!attached) attached = a;
+    else {
+        Attachment *e = attached;
+        while (e->next) e = e->next;
+        e->next = a;
+        a->prev = e;
+    }
+    return a;
+}
+
 // 0x42da60
 bool RayTrace::removeSprite(const char *n) {
     for (size_t i = 0; i < sprites.size(); i++)

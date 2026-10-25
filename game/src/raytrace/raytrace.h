@@ -82,9 +82,13 @@ struct WallObject {
 
 // A graphic drawn with a sprite, offset and scaled with it (+0x148 prev, +0x14c next, +0x150 graphic, +0x17c on,
 // +0x180 only with this frame of the sprite, -1 = any).
+// An animation drawn over a sprite (0x188 bytes, made by 0x42f390): a mouth, eyes... switched on and off by
+// the characters' states.
 struct Attachment {
-    Attachment *prev = nullptr, *next = nullptr;
-    Vision::Graphic *g = nullptr;
+    ~Attachment() { delete g; }
+    std::string name;                               // +0x154
+    Attachment *prev = nullptr, *next = nullptr;    // +0x148 +0x14c
+    Vision::Graphic *g = nullptr;                   // +0x150 (the Animation embedded at +0x30)
     bool on = false;
     int frame = -1;
     int period = -1;                                // +0x184: ms per frame step (-1: not stepped)
@@ -98,6 +102,9 @@ struct Sprite3D {
     void load();                                    // 0x42ef20
     void setAnim(const char *prefix);               // 0x42efb0: switch to the animation <prefix> (made on first use)
     void place();                                   // 0x42f7f0: y = half the frames' average height
+    void setPos(float px, float py, float pz) { x = px; y = py; z = pz; }   // 0x42f740 (0x42f700 reads them)
+    Attachment *findAttached(const char *n);        // 0x42f350
+    Attachment *attach(const char *n, const char *prefix, int gz);   // 0x42f390: nullptr when the name is taken
     bool loaded = false;                            // +0x00
     std::vector<std::pair<std::string, Vision::Animation *>> anims;   // +0x04: by name (the main one first)
     float dist = 0;                                 // +0x14

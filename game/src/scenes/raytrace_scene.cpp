@@ -1,8 +1,11 @@
 // Raytrace_Scene and MovementInputTask, reconstructed from "Tinker Bell.exe" (see raytrace_scene.h).
 #include "raytrace_scene.h"
+#include "london_chars.h"
 #include "tink3d.h"
 #include "state.h"
 #include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
 #include <string>
 #include "tb.h"
@@ -168,6 +171,8 @@ void Raytrace_Scene::open(const char *nm) {
     rt.loadGround(("data\\" + n + ".grn").c_str());  // 0x42cc80
     rt.loadAll();
     tb_input_set_arrows(true);                       // port: the pad as the arrow keys (platform/dinput.h)
+    if (const char *c = getenv("TB_RT_CAM"))         // desktop test aid (not in the game): "x,z,degrees,eye"
+        sscanf(c, "%f,%f,%f,%f", &cam_x, &cam_z, &cam_deg, &cam_eye);
     rt.setCamera(cam_x, cam_eye, cam_z, cam_deg);    // 0x42a570
     buildObstacles();                                // 0x4aa880
 }
@@ -370,14 +375,44 @@ void Raytrace_Scene::leave() {                       // v20 0x4aa110
 // ---------------------------------------------------------------- London
 void London_Scene::enter() {                         // part of 0x4b5800 (-> 0x4ab0f0 -> 0x4a9ca0)
     open(name());
+    tink->hide();                                    // 0x4cca40
+    wendy = new WendyInLondon(&rt);                  // 0x4bdaf0
+    peter = new PeterInLondon(&rt);                  // 0x4bbf90
+    // port: the scripts (0x4b9b30), the ribbon, the waterfall, the corner block, the wave and arrow images,
+    // the cursors and the music come next
 }
 
-void London_Scene::run() {                           // port: until 0x4b5300 is in, the frame loop only
+// port: until 0x4b5300 is in, the frame loop only: Wendy every frame, as all of London's script loops do; Peter
+// only in the last one (TB_LONDON_PETER=<ms> runs him too, and lands him after that long; for testing).
+void London_Scene::run() {
     wait(1);
+    const char *pe = getenv("TB_LONDON_PETER");
+    bool with_peter = pe != nullptr;
+    uint32_t land_at = frame_time() + (pe ? (uint32_t)atoi(pe) : 0);
+    bool landed = false;
+    const char *say = getenv("TB_LONDON_SAY");       // test aid: a line for Peter ("PET" in it) or Wendy, after 3 s
+    uint32_t say_at = frame_time() + 3000;
     for (;;) {
-        wait(0);
+        if (say && frame_time() >= say_at) {
+            if (strstr(say, "PET")) peter->say(say);
+            else wendy->say(say);
+            say = nullptr;
+        }
+        if (wendy) wendy->update();                  // 0x4be780
+        if (with_peter && !landed && frame_time() >= land_at) { peter->land(); landed = true; }
+        if (with_peter && peter) peter->update();    // 0x4bc880
         cursorUpdate();                              // v30
+        wait(0);
     }
+}
+
+void London_Scene::leave() {                         // v20 0x4b6230 (part)
+    Vision::VoiceOver::get().stop();                 // 0x4c9260
+    delete wendy;
+    wendy = nullptr;
+    delete peter;
+    peter = nullptr;
+    TinkerbellRaytraceScene::leave();
 }
 
 }  // namespace Game

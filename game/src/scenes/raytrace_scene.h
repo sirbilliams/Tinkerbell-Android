@@ -101,11 +101,16 @@ public:
 
 // "london" (London_Scene@LondonScene, vtable 0x516a3c). port: for now only the 3D street itself: the
 // TinkerbellRaytraceScene layer (0x4ab0f0) and London's enter (0x4b5800) / run (0x4b5300) come next.
+class WendyInLondon;
+class PeterInLondon;
 class London_Scene : public TinkerbellRaytraceScene {
 public:
     London_Scene() : TinkerbellRaytraceScene("london") {}
-    void enter() override;
+    void enter() override;                           // 0x4b5800 (part)
     void run() override;                             // port: London's own run (0x4b5300) is next
+    void leave() override;                           // v20 0x4b6230 (part)
+    WendyInLondon *wendy = nullptr;                  // +0x3500
+    PeterInLondon *peter = nullptr;                  // +0x3504
 };
 
 }  // namespace Game

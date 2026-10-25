@@ -58,6 +58,7 @@ public:
     void stop();                                // 0x4c9260
     bool isPlaying(const char *name) const;     // 0x4c9690: `name` is the current line and it has not ended
     bool busy() const { return playingFlag; }   // +0x178
+    uint32_t lengthMs() const { return sound ? sound->lengthMs() : 0; }   // 0x4c98e0: the current line's length
     void registerLine(const char *name, MagpieCharacter *c);   // 0x4c91b0: lines_[name] = c
     const std::string &current() const { return cur; }         // +0x15c
 

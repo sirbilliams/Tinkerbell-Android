@@ -1,5 +1,15 @@
 # Next session
 
+## Latest (Oct 25, Peter and Wendy, ~43%)
+- game/src/scenes/london_chars.*: PeterInLondon (0x4bbf90) and WendyInLondon (0x4bdaf0) with all their state
+  classes (v0 enter, v1 leave, v2 tick, v3 ready, v4 mouth, v5 rest), say() (0x4bc8b0 / 0x4be880: talk state
+  per line + VoiceOver), update (0x4bc880 / 0x4be780), the request idiom, Land/Fly curves (0x401000..).
+  Sprite3D attachments (0x42f350 / 0x42f390). London enter creates them, Tink hidden; run updates Wendy each
+  frame (Peter only in the last script loop in the exe). Test aids: TB_RT_CAM now works in any 3D scene
+  (e.g. "3000.1,2700.1,176,0.1" shows both), TB_LONDON_PETER=<ms> (update + land Peter), TB_LONDON_SAY=<line>.
+- Next: London enter remainder (scripts 0x4b9b30, ribbon 0x4b68f0, waterfall, corner_block, waves, arrows,
+  cursors, music), run 0x4b5300 with the four LS scripts, then the toolbar.
+
 ## Latest (Oct 25, 00:00, ~40%)
 - London is enterable from the sign-in room (Big Ben): game/src/scenes/raytrace_scene.* (Raytrace_Scene open /
   physics / sprite frames, MovementInputTask, London_Scene = plain Raytrace_Scene for now). RayTrace::draw
