@@ -1,4 +1,7 @@
 // Input shim: SDL events -> Win32 messages (see dinput.h).
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 #include "dinput.h"
 #include "tb.h"
 #include <deque>
@@ -245,7 +248,32 @@ bool tb_input_event(const SDL_Event &e) {
     }
 }
 
+// Desktop test aid (not in the game): TB_FAKE_INPUT="<frame>:click <x>,<y>;<frame>:move <x>,<y>;<frame>:key <vk>"
+// replays mouse clicks / moves (game pixels) and key presses at the given frame numbers (calls of tb_input_update).
+static void fakeInput() {
+    static const char *spec = getenv("TB_FAKE_INPUT");
+    static int frame = 0;
+    frame++;
+    if (!spec || !*spec) return;
+    for (const char *p = spec; p && *p; ) {
+        int f = 0, a = 0, b = 0, n = 0;
+        char what[8] = {0};
+        if (sscanf(p, "%d:%7s %d,%d%n", &f, what, &a, &b, &n) >= 3 && f == frame) {
+            if (!strcmp(what, "click") || !strcmp(what, "move")) {
+                g_cx = (float)a; g_cy = (float)b;
+                postMove();
+                if (!strcmp(what, "click")) { button(TB_VK_LBUTTON, true); button(TB_VK_LBUTTON, false); }
+            } else if (!strcmp(what, "key")) {
+                key(a, 0, true, false); key(a, 0, false, false);
+            }
+        }
+        p = strchr(p, ';');
+        if (p) p++;
+    }
+}
+
 void tb_input_update() {
+    fakeInput();
     uint32_t t = now();
     float dt = (t - g_last_ticks) / 1000.0f;
     g_last_ticks = t;

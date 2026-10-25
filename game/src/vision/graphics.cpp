@@ -124,10 +124,14 @@ void Screen::loadAll() {                 // 0x41ec40
     dirty();
 }
 void Screen::unloadAll() {               // 0x41ec00
+    // port: skipped while exiting (an abort): graphics deleted then skip their detach, so the layers may still
+    // list freed objects (the exe exits the process at that point anyway).
+    if (tb_exiting()) return;
     for (size_t i = 0; i < layer_list.size(); i++)
         for (Node *g = layer_list[i]->graphics.first; g; g = g->next) ((Graphic *)g->obj)->unload();
 }
 void Screen::clear() {                   // 0x41ebc0
+    if (tb_exiting()) return;            // port: as unloadAll
     for (size_t i = 0; i < layer_list.size(); i++)
         while (layer_list[i]->graphics.first) ((Graphic *)layer_list[i]->graphics.first->obj)->detach();
 }
