@@ -34,7 +34,9 @@ struct State {
     Vision::Graphic *cursor_active = nullptr;        // +0x60 ("glob_cu_active_")
     Vision::Graphic *cursor = nullptr;               // +0x5c ("glob_cu_normal_"): the game's own cursor (port: created with the state object
                                                      // 0x4ec6e0, not ported yet; null = none)
+    bool paused3d = false;                           // +0x64: the 3D scenes' frame work stops (Global3DTask)
     int skill = 0;                                   // +0x68
+    bool hover_up = false, hover_down = false;       // +0x75 +0x76: the 3D eye rises to 200 / stays
     Saves saves;                                     // +0x3cc
     bool vo_suppressed = false;                      // +0x560 (the idle prompts and repeaters stay quiet)
     bool start_in_london = false;                    // +0x1818 (Big Ben chosen in the sign-in room)

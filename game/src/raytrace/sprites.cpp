@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
+#include <stdlib.h>
 #include "tb.h"
 #include "../../../platform/dsound.h"   // tb_fopen_ci
 
@@ -43,6 +44,61 @@ void Sprite3D::load() {                              // 0x42ef20
     last = Vision::frame_time();
     loaded = true;
     anim->visible = true;
+}
+
+// 0x42efb0
+void Sprite3D::setAnim(const char *p) {
+    if (strcasecmp(prefix.c_str(), p) == 0) return;
+    prefix = p;
+    if (!loaded) return;
+    bool vis = anim && anim->visible;
+    int m = anim ? anim->mode : 1;
+    Vision::Animation *a = nullptr;
+    for (auto &e : anims) if (e.first == p) { a = e.second; break; }
+    anim = a;
+    if (!anim) {
+        Vision::vision_log("Should preload %s into %s", p, name.c_str());   // 0x535ac8
+        anim = new Vision::Animation(p);
+        anims.push_back(std::make_pair(std::string(anim->name()), anim));
+        anim->load();
+        anim->setHit(hit, false);
+        anim->mode = 1;
+    }
+    anim->mode = m;
+    anim->setFrame(0);
+    anim->visible = vis;
+}
+
+// 0x42f7f0
+void Sprite3D::place() {
+    if (!anim) return;
+    int sum = 0, n = anim->count();
+    for (int i = 0; i < n; i++) sum += anim->frame(i)->oh;
+    if (n == 0) return;                              // port: the exe would divide by zero
+    y = (float)((sum / n) / 2);
+}
+
+// 0x42da60
+bool RayTrace::removeSprite(const char *n) {
+    for (size_t i = 0; i < sprites.size(); i++)
+        if (strcasecmp(sprites[i]->name.c_str(), n) == 0) {
+            delete sprites[i];
+            sprites.erase(sprites.begin() + (long)i);
+            return true;
+        }
+    return false;
+}
+
+// 0x429600
+bool RayTrace::removeBox(Sprite3D *s) {
+    std::string bn = s->name + "_box";
+    for (size_t i = 0; i < boxes.size(); i++)
+        if (strcasecmp(boxes[i]->name.c_str(), bn.c_str()) == 0) {
+            delete boxes[i];
+            boxes.erase(boxes.begin() + (long)i);
+            return true;
+        }
+    return false;
 }
 
 Sprite3D *RayTrace::addSprite(const char *n, const char *p, int h) {   // 0x42d9d0
@@ -174,6 +230,9 @@ void RayTrace::drawSprite(int i) {
     double p = ((double)160.0f + eyef) * 590.0f / s->dist / cs;
     an->x = col;
     an->y = (int)(p - (double)s->y * sc * 0.01);
+    if (getenv("TB_DEBUG_SPRITE") && s->name == getenv("TB_DEBUG_SPRITE"))
+        tb_log("sprite %s at %.0f,%.0f,%.0f dist %.0f col %d row %d scale %.1f frames %d vis %d", s->name.c_str(),
+               s->x, s->y, s->z, s->dist, an->x, an->y, sc, an->count(), (int)an->visible);
     an->setScale(sc);
     draw_graphic(an);
     if (s->mode == 2 && an->current() != 0) return;

@@ -514,9 +514,50 @@ void RayTrace::draw() {
         backdrop->draw();
         if (bw < (uint32_t)w + off) { backdrop->x += (int)bw; backdrop->draw(); }
     }
-    if (!no_ground) drawGround2();                                     // 0x42c460 (port: no cache; mode 2)
+    if (!no_ground) drawGround();                                      // 0x42c460
     if (overlay) overlay->draw();
     drawWalls();
+}
+
+// 0x42bc30
+uint32_t RayTrace::idleTime() {
+    if (still_since != 0) {
+        uint32_t t = Vision::frame_time() - still_since;
+        if (t > 60) return t;
+    }
+    return 0;
+}
+
+// 0x42c460: the ground; when the camera has stood still for 60 ms the drawn rows are kept and copied back
+// instead of cast again. port: only mode 2 (0x42bf50) is ported (the mode for a processor rating >= 4).
+void RayTrace::drawGround() {
+    bool keep = false;
+    uint16_t *pix = canvas_pixels();
+    if (gc_view == view && gc_x == camx && gc_z == camz && gc_eye == eyef) {
+        if (gc_valid) {
+            if (pix && !gc_pixels.empty())
+                memcpy(pix + (size_t)(h - ground_rows) * w, gc_pixels.data(), (size_t)w * ground_rows * 2);
+            return;
+        }
+        if (still_since == 0) still_since = Vision::frame_time();
+        else if (Vision::frame_time() - still_since > 60) keep = true;
+    } else {
+        still_since = 0;
+    }
+    gc_view = view;
+    gc_x = camx;
+    gc_valid = false;
+    ground_rows = 0;
+    gc_z = camz;
+    gc_eye = eyef;
+    drawGround2();
+    if (keep) {
+        move_start = 0;                                                // +0x8c
+        if (ground_rows != 0 && pix) {
+            gc_pixels.assign(pix + (size_t)(h - ground_rows) * w, pix + (size_t)h * w);
+            gc_valid = true;
+        }
+    }
 }
 
 // 0x4190c0, run once (0x419170): copy 600 KB ten times; 10 - ms / 25, at least 1.

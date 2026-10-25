@@ -96,6 +96,8 @@ struct Sprite3D {
     Sprite3D(const char *name, const char *prefix, int hit);   // 0x42e990
     ~Sprite3D();
     void load();                                    // 0x42ef20
+    void setAnim(const char *prefix);               // 0x42efb0: switch to the animation <prefix> (made on first use)
+    void place();                                   // 0x42f7f0: y = half the frames' average height
     bool loaded = false;                            // +0x00
     std::vector<std::pair<std::string, Vision::Animation *>> anims;   // +0x04: by name (the main one first)
     float dist = 0;                                 // +0x14
@@ -155,6 +157,10 @@ public:
     void drawWalls();                               // the end of 0x426710: walls and sprites by distance
     Sprite3D *addSprite(const char *name, const char *prefix, int hit);   // 0x42d9d0
     Sprite3D *findSprite(const char *name);         // 0x42dc70
+    bool removeSprite(const char *name);            // 0x42da60
+    bool removeBox(Sprite3D *s);                    // 0x429600: "<name>_box"
+    void drawGround();                              // 0x42c460: the ground, reused while the camera stands still
+    uint32_t idleTime();                            // 0x42bc30: ms the camera has stood still (after 60), else 0
     void makeBox(Sprite3D *s, bool flag);           // 0x429580 -> 0x429380
     void drawSprite(int i);                         // 0x42e120
     // movement and collision (collision.cpp)
@@ -218,6 +224,11 @@ public:
     Vision::Graphic *backdrop = nullptr;            // +0x116c: a panorama behind everything (none in London)
     Vision::Graphic *overlay = nullptr;             // +0x1168
     bool no_ground = false;                         // +0x1175
+    uint32_t still_since = 0;                       // +0x84
+    int gc_view = 0x7fffffff;                       // +0x4e0: the camera the cached ground is for
+    float gc_x = 0, gc_z = 0, gc_eye = 0;           // +0x4c4 +0x4c8 +0x4cc
+    bool gc_valid = false;                          // +0x4dc
+    std::vector<uint16_t> gc_pixels;                // 0x5a95b0: the cached ground rows
     float angf = 0;                                 // +0x570: the angle at the screen's centre (radians)
     bool moved = false, ready = false;              // +0xa5 +0xa4
     std::vector<WallObject *> walls;                // +0x57c (count +0x578)

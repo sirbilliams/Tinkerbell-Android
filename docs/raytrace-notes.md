@@ -101,3 +101,19 @@ qsort 0x4f54fc), and for the +0x578 entries at +0x57c (two end points each, +0x8
   +0x16b8 friction 8, +0x16bc 6.
 - RayTrace::draw 0x426710: sky writes +0x51c itself (the draw's own +0x51c sum is dead); g_sky_top =
   240 - ftol(eye)/8, >= 0; backdrop +0x116c scrolled by (+0x1178 - view - 1 + n) * bw / n, drawn twice.
+
+## Tink in 3D (Oct 25)
+- RayTraceCharacter (character.*, 0x4cc5c0..): one named sprite, setAnim 0x4cc780 (Sprite3D::setAnim 0x42efb0
+  makes the animation on first use: "Should preload %s into %s"), place 0x42f7f0 (y = half the average frame
+  height, plus the character's y).
+- Tinkerbell3D (scenes/tink3d.*): init 0x4da790 (300 ahead, eye + 375, Basic(1)), update 0x4daf30 (front command
+  update/step, else root + face the camera; idle -> wander 0x4dad40 or every 15 s an idle 0x4daa20; move 0x4db470,
+  dust 0x4db3a0 / 0x4db1a0 with 35 "traildust" sprites). Commands: Basic 0x51766c (0..4, flyTo via the planner),
+  Animation 0x517624 (Loop, Idle3/4/6/7/9). turnToward 0x4dc3d0 (15 degrees a step). flyTo's heading constant is
+  57.0675 (0x517650), not 180/pi.
+- Path planner (+0xf8): obstacles from the boxes (0x4aa880, radius 0.6 * 2 * max extent), 0x4e8de0 hit test, one
+  45-degree detour (0x4e9280).
+- Ground cache 0x42c460 (+0x84 = camera still since; Tink's idle check 0x42bc30).
+- Global3DTask 0x4abfd0 and the hover v32 0x443820 (eye sinks unless state +0x75; +0x76 holds it).
+- London's camera starts at the Raytrace_Scene default (3000.1, 0.1, 3000.1, 90.1); LSTickTock later sets
+  (3950, 0.1, 1450, 135).

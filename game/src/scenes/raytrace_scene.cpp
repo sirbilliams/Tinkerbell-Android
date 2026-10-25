@@ -1,5 +1,8 @@
 // Raytrace_Scene and MovementInputTask, reconstructed from "Tinker Bell.exe" (see raytrace_scene.h).
 #include "raytrace_scene.h"
+#include "tink3d.h"
+#include "state.h"
+#include <string.h>
 #include <math.h>
 #include <string>
 #include "tb.h"
@@ -166,6 +169,177 @@ void Raytrace_Scene::open(const char *nm) {
     rt.loadAll();
     tb_input_set_arrows(true);                       // port: the pad as the arrow keys (platform/dinput.h)
     rt.setCamera(cam_x, cam_eye, cam_z, cam_deg);    // 0x42a570
+    buildObstacles();                                // 0x4aa880
+}
+
+// ---------------------------------------------------------------- the path planner
+// 0x4aa880: an obstacle for each box: its centre, size = twice the larger of its x/z extents, its y extent.
+void Raytrace_Scene::buildObstacles() {
+    planner.points.clear();                          // 0x4e8c20
+    planner.obstacles.clear();                       // 0x4e9040
+    for (Raytrace::Box *b : rt.boxes) {
+        float cx = (float)(((double)b->minx + b->maxx) * 0.5f);
+        float cy = (float)(((double)b->y0 + b->y1) * 0.5f);
+        float cz = (float)(((double)b->minz + b->maxz) * 0.5f);
+        float hy = (float)fabs((double)b->y1 - b->y0);
+        float dz = (float)fabs((double)b->maxz - b->minz);
+        double dx = fabs((double)b->maxx - b->minx);
+        double m = (double)dz < dx ? dx : (double)dz;
+        planner.add(b->name.c_str(), cx, cy, cz, (float)(m + m), hy);
+    }
+}
+
+void PathPlanner::add(const char *n, float px, float py, float pz, float size, float hh) {   // 0x4e9070
+    Obstacle o;
+    o.name = n;
+    float r = (float)((double)size * 0.600000024f);  // 0x517b74
+    o.r = r;
+    o.r2 = (float)((double)r * r);
+    o.x = px; o.y = py; o.z = pz;
+    o.h = hh;
+    obstacles.push_back(o);
+}
+
+// 0x4e8de0: does the segment seg = (start, end) pass through the obstacle (its circle and height band)?
+bool PathPlanner::Obstacle::blocks(const float seg[6], bool from_start) const {
+    float ax = seg[0], ay = seg[1], az = seg[2], bx = seg[3], by = seg[4], bz = seg[5];
+    if (from_start) {
+        double ex = (double)ax - x, ez = (double)az - z;
+        if (r2 > ez * ez + ex * ex && h > fabs((double)ay - y)) return true;
+    }
+    {
+        double ex = (double)bx - x, ez = (double)bz - z;
+        if (r2 > ez * ez + ex * ex && h > fabs((double)by - y)) return true;
+    }
+    double ox = (double)x - ax, oz = (double)z - az;
+    float dist = (float)sqrt(oz * oz + ox * ox);
+    float dx = (float)((double)bx - ax);
+    float dy = (float)((double)by - ay);
+    float dz = (float)((double)bz - az);
+    float len = (float)sqrt((double)dz * dz + (double)dx * dx);
+    if (len == 0.0f) {
+        if (dy == 0.0f) return false;
+        float step = (float)((double)dy * 0.0500000007f);   // 0x517b78
+        double sx = (double)x - x, sz = (double)z - z;   // (sic: the obstacle against itself)
+        float d2 = (float)(sz * sz + sx * sx);
+        double yy = ay;
+        for (int i = 0; i < 20; i++) {
+            yy += step;
+            if (r2 > d2 && h > fabs(yy - y)) return true;
+        }
+        return false;
+    }
+    double t = 1.0f;
+    if (!(dist <= len)) t = (double)dist / len;
+    double px = t * dx + ax - x;
+    double pz = t * dz + az - z;
+    if (!(r2 > pz * pz + px * px)) return false;
+    return h > fabs(t * dy + ay - y);
+}
+
+bool PathPlanner::blocked(const float to[3]) {       // 0x4e91e0
+    const Point &l = points.back();
+    float seg[6] = { l.x, l.y, l.z, to[0], to[1], to[2] };
+    for (const Obstacle &o : obstacles)
+        if (o.blocks(seg, false)) return true;
+    return false;
+}
+
+// 0x4e9280: from a to b, around one obstacle by a corner at the middle turned 45 degrees.
+bool PathPlanner::findPath(float ax, float ay, float az, float bx, float by, float bz) {
+    a[0] = ax; a[1] = ay; a[2] = az;
+    b[0] = bx; b[1] = by; b[2] = bz;
+    points.clear();
+    points.push_back(Point{ ax, ay, az });
+    if (blocked(b)) {
+        double dx = (double)b[0] - a[0];
+        double dz = (double)b[2] - a[2];
+        float cz = (float)((dz + dx) * 0.5f + az);
+        float cx = (float)((dx * 0.5f + ax) - dz * 0.5f);
+        points.push_back(Point{ cx, ay, cz });
+        points.push_back(Point{ bx, by, bz });
+        return true;
+    }
+    points.push_back(Point{ b[0], b[1], b[2] });
+    return true;
+}
+
+void PathPlanner::straight(float ax, float ay, float az, float bx, float by, float bz) {   // 0x4e9380
+    points.clear();
+    points.push_back(Point{ ax, ay, az });
+    points.push_back(Point{ bx, by, bz });
+}
+
+// ---------------------------------------------------------------- TinkerbellRaytraceScene
+void Global3DTask::run() {                           // 0x4abfd0
+    wait(1);
+    for (;;) {
+        if (!Game::state().paused3d) {
+            scene->spriteFrames();                   // v22
+            scene->cursorUpdate();                   // v30
+            // port: 0x4bf070 (the +0x2740 object, 0x4befe0) is not ported yet
+            if (scene->tink) scene->tink->update();  // 0x4daf30
+            scene->hover();                          // v32
+            // port: 0x4f08f0 (the toolbar) is not ported yet
+        }
+        wait(0);
+    }
+}
+
+TinkerbellRaytraceScene::~TinkerbellRaytraceScene() {
+    delete global_task;
+    delete tink;
+}
+
+// v27 0x4ab0f0 (part): the 3D scene, then the global_3d and tinkerbell3D packs, Tink and the frame task.
+void TinkerbellRaytraceScene::open(const char *nm) {
+    Game::state().hover_up = false;                        // +0x75
+    Raytrace_Scene::open(nm);
+    global3d = ras_open("global_3d", "", &data_device());   // +0x17d4
+    global3d->load();
+    ras_set_current(global3d);
+    // port: the toolbar (+0x17d8, +0x19a0, 0x4efd50 +0x1998, +0x1fe8), 0x4befe0 (+0x2740), the help bell and the
+    // cloud banks are not ported yet
+    tinkpack = ras_open("tinkerbell3D", "", &data_device());   // +0x17d0
+    tinkpack->load();
+    ras_set_current(tinkpack);
+    tink = new Tinkerbell3D(&rt, this);              // 0x4da4a0
+    tink->init();                                    // v1
+    reset();                                         // 0x421110
+    global_task = new Global3DTask(this);
+    global_task->activate();
+}
+
+void TinkerbellRaytraceScene::leave() {              // v20 0x4ab470 (part)
+    if (global_task) { global_task->deactivate(); delete global_task; global_task = nullptr; }
+    if (tink) { tink->release(); delete tink; tink = nullptr; }
+    if (tinkpack) ras_close(tinkpack);
+    tinkpack = nullptr;
+    if (global3d) ras_close(global3d);
+    global3d = nullptr;
+    Raytrace_Scene::leave();
+}
+
+// v32 0x443820: every 30 ms (at most 100): the eye sinks by eye * dt / 1000 (no more than half of it) while above 1,
+// or, with state +0x75, eases to 200; state +0x76 holds it.
+void TinkerbellRaytraceScene::hover() {
+    float e = rt.eyef;
+    uint32_t now = frame_time();
+    uint32_t ms = now - last_hover;
+    if (ms < 0x1e) return;
+    if (ms > 100) ms = 100;
+    last_hover = now;
+    if (!Game::state().hover_up) {
+        if (Game::state().hover_down) return;
+        float d = (float)((double)(int64_t)ms * e * 0.00100000005f);
+        if (!(e > 1.0f)) return;
+        if (e < d) d = (float)((double)e * 0.5f);
+        rt.lower(d);
+    } else {
+        float v = (float)((200.0f - (double)e) * (int32_t)ms * 0.00100000005f);
+        if (v > 0.0f) rt.raise(v);
+        else rt.lower(-v);
+    }
 }
 
 void Raytrace_Scene::run() {                         // v10 0x4a9be0
@@ -196,6 +370,14 @@ void Raytrace_Scene::leave() {                       // v20 0x4aa110
 // ---------------------------------------------------------------- London
 void London_Scene::enter() {                         // part of 0x4b5800 (-> 0x4ab0f0 -> 0x4a9ca0)
     open(name());
+}
+
+void London_Scene::run() {                           // port: until 0x4b5300 is in, the frame loop only
+    wait(1);
+    for (;;) {
+        wait(0);
+        cursorUpdate();                              // v30
+    }
 }
 
 }  // namespace Game
