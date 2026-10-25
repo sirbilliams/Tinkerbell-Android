@@ -20,6 +20,8 @@ bool g_inited = false;
 uint32_t g_last_ticks = 0;
 float g_ax = 0, g_ay = 0;         // stick / d-pad direction, -1..1
 bool g_dpad[4];                   // up down left right
+bool g_arrows = false;            // 3D scenes: d-pad / left stick = arrow keys, shoulders = Shift / Ctrl
+bool g_shoulder[2];               // left, right
 bool g_pad_btn[4];                // A, B, X, Start
 
 uint32_t now() { return SDL_GetTicks(); }
@@ -233,6 +235,8 @@ bool tb_input_event(const SDL_Event &e) {
         case SDL_CONTROLLER_BUTTON_B: padButton(1, down); break;
         case SDL_CONTROLLER_BUTTON_X: padButton(2, down); break;
         case SDL_CONTROLLER_BUTTON_START: case SDL_CONTROLLER_BUTTON_BACK: padButton(3, down); break;
+        case SDL_CONTROLLER_BUTTON_LEFTSHOULDER: g_shoulder[0] = down; break;
+        case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: g_shoulder[1] = down; break;
         case SDL_CONTROLLER_BUTTON_DPAD_UP: g_dpad[0] = down; break;
         case SDL_CONTROLLER_BUTTON_DPAD_DOWN: g_dpad[1] = down; break;
         case SDL_CONTROLLER_BUTTON_DPAD_LEFT: g_dpad[2] = down; break;
@@ -265,6 +269,10 @@ static void fakeInput() {
                 if (!strcmp(what, "click")) { button(TB_VK_LBUTTON, true); button(TB_VK_LBUTTON, false); }
             } else if (!strcmp(what, "key")) {
                 key(a, 0, true, false); key(a, 0, false, false);
+            } else if (!strcmp(what, "down")) {     // "down vk,0": held until "up vk,0"
+                key(a, 0, true, false);
+            } else if (!strcmp(what, "up")) {
+                key(a, 0, false, false);
             }
         }
         p = strchr(p, ';');
@@ -281,16 +289,22 @@ void tb_input_update() {
     float ax = 0, ay = 0;
     for (auto p : g_pads) {
         if (!p) continue;
-        ax += axisValue(p, SDL_CONTROLLER_AXIS_LEFTX) + axisValue(p, SDL_CONTROLLER_AXIS_RIGHTX);
-        ay += axisValue(p, SDL_CONTROLLER_AXIS_LEFTY) + axisValue(p, SDL_CONTROLLER_AXIS_RIGHTY);
+        if (!g_arrows) {
+            ax += axisValue(p, SDL_CONTROLLER_AXIS_LEFTX);
+            ay += axisValue(p, SDL_CONTROLLER_AXIS_LEFTY);
+        }
+        ax += axisValue(p, SDL_CONTROLLER_AXIS_RIGHTX);
+        ay += axisValue(p, SDL_CONTROLLER_AXIS_RIGHTY);
     }
     float sx = ax * fabsf(ax), sy = ay * fabsf(ay);                // finer control near the centre
     float speed = 420.0f;                                           // game pixels per second at full tilt
     float mx = sx * speed, my = sy * speed;
-    if (g_dpad[2]) mx -= 240;
-    if (g_dpad[3]) mx += 240;
-    if (g_dpad[0]) my -= 240;
-    if (g_dpad[1]) my += 240;
+    if (!g_arrows) {
+        if (g_dpad[2]) mx -= 240;
+        if (g_dpad[3]) mx += 240;
+        if (g_dpad[0]) my -= 240;
+        if (g_dpad[1]) my += 240;
+    }
     if (mx != 0 || my != 0) {
         float nx = g_cx + mx * dt, ny = g_cy + my * dt;
         nx = nx < 0 ? 0 : nx > g_gw - 1 ? (float)(g_gw - 1) : nx;
@@ -313,11 +327,34 @@ void tb_input_clear() {
     memset(g_down, 0, sizeof g_down);
     memset(g_pad_btn, 0, sizeof g_pad_btn);
     memset(g_dpad, 0, sizeof g_dpad);
+    memset(g_shoulder, 0, sizeof g_shoulder);
+}
+
+void tb_input_set_arrows(bool on) { g_arrows = on; }
+
+// The pad as keys in 3D scenes: is `vk` held through the d-pad, left stick or shoulders?
+static bool padKey(int vk) {
+    if (!g_arrows) return false;
+    float lx = 0, ly = 0;
+    for (auto p : g_pads) {
+        if (!p) continue;
+        lx += axisValue(p, SDL_CONTROLLER_AXIS_LEFTX);
+        ly += axisValue(p, SDL_CONTROLLER_AXIS_LEFTY);
+    }
+    switch (vk) {
+    case 0x26: return g_dpad[0] || ly < -0.5f;      // VK_UP
+    case 0x28: return g_dpad[1] || ly > 0.5f;       // VK_DOWN
+    case 0x25: return g_dpad[2] || lx < -0.5f;      // VK_LEFT
+    case 0x27: return g_dpad[3] || lx > 0.5f;       // VK_RIGHT
+    case 0x10: return g_shoulder[1];                // VK_SHIFT: fly up
+    case 0x11: return g_shoulder[0];                // VK_CONTROL: fly down
+    }
+    return false;
 }
 
 int16_t tb_GetKeyState(int vk) {
     if (vk < 0 || vk > 255) return 0;
-    int16_t r = g_down[vk] ? (int16_t)0x8000 : 0;
+    int16_t r = (g_down[vk] || padKey(vk)) ? (int16_t)0x8000 : 0;
     if (vk == 0x14 && g_caps) r |= 1;
     return r;
 }

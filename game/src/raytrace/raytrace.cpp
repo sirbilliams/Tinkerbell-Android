@@ -34,13 +34,32 @@ uint8_t seg_init(Seg *s, float x1, float z1, float x2, float z2) {   // 0x427560
 }
 
 RayTrace::RayTrace() : Vision::Screen(0, 0, 0, 0, 0, true, true) {}
-RayTrace::~RayTrace() {
+RayTrace::~RayTrace() { release(); }
+
+// 0x429980 (from the scene's leave): everything the loaders made.
+// port: frees in one place what the exe frees across 0x429980 and its helpers (same set of objects).
+void RayTrace::release() {
     for (WallObject *o : walls) delete o;
+    walls.clear();
     for (Seg *s : segs) delete s;
+    segs.clear();
+    listA = listB = nullptr;
     for (Vision::Image *t : tiles) delete t;
+    tiles.clear();
+    grid.clear();
+    for (Vision::Pixelmap *t : textures) if (t) t->release();   // the wall textures found by 0x426f00
+    textures.clear();
+    mirrored.clear();
     for (Sprite3D *s : sprites) delete s;
+    sprites.clear();
     for (Box *b : boxes) delete b;
+    boxes.clear();
     for (Seg *s : bsegs) delete s;
+    bsegs.clear();
+    boundary = nullptr;
+    for (Barrier *b : barriers) delete b;
+    barriers.clear();
+    ready = false;
 }
 
 // 0x4279a0: the corner `a` shares with `b` (a's two ends by its direction flags; the one that is also an end of b,
@@ -425,7 +444,6 @@ void RayTrace::castColumns() {
     if (!listA) return;
     if ((int)columns.size() < w * 2) columns.resize((size_t)w * 2);
     ncolumns = 0;
-    maxdist = 0;
     Seg ray;
     float farz = (float)(angles[view].dz * range + camz);
     float farx = (float)(angles[view].dx * range + camx);
@@ -441,6 +459,64 @@ void RayTrace::castColumns() {
     Seg *b1 = listB ? cast(w - 1, ray, listB, nextColumn(), nullptr) : nullptr;
     if (!listB) return;                                               // port: London has both lists
     subdivide(0, (unsigned)(w - 1), a0, b0, a1, b1);
+}
+
+// 0x4281a0: everything for the scene `name` (the walls pack is current).
+bool RayTrace::load(const char *name) {
+    ready = false;                                                     // +0xa4
+    listA = listB = nullptr;
+    last_time = Vision::frame_time();
+    eyef = 0;
+    sky_angle = 0;
+    sky_clip = true;                                                   // +0x524
+    ground_x = ground_z = 0;
+    initAngles();
+    walls.clear();
+    if (!loadWalls(name)) return false;
+    columns.assign((size_t)w * 2, Column());                           // +0x548: w * 0x60 bytes
+    initCollision();
+    for (Sprite3D *sp : sprites) delete sp;                            // the sprite vector is emptied
+    sprites.clear();
+    if (speedRating() < 4) { if (ground_tex || sky_tex) ground_mode = 3; }   // port: mode 3 isn't ported
+    else ground_mode = 2;
+    groundTable();
+    return true;
+}
+
+// 0x426710: the frame: the columns again if the camera moved, sky, backdrop, ground, then walls and sprites.
+void RayTrace::draw() {
+    if (!visible || !ready) return;
+    frames++;
+    uint32_t now = Vision::frame_time();
+    frame_dt = now - last_time;
+    if (frame_dt == 0) frame_dt = 1;
+    last_time = now;
+    horizon = h / 2;
+    // port: the sprite box refresh (+0xa0 sprites, 0x4294b0) is not in yet; London's sprites don't set it
+    if (moved) {
+        maxdist = 1.0;                                                 // +0x550
+        moved = false;
+        ncolumns = 0;
+        eye = (int)eyef;
+        castColumns();
+    }
+    int e8 = (int)eyef;
+    g_sky_top = 240 - e8 / 8;                                          // (the exe's +0x51c sum here is
+    if (g_sky_top < 0) g_sky_top = 0;                                  //  overwritten by the sky)
+    drawSky();
+    if (backdrop) {
+        uint32_t n = (uint32_t)angles.size();
+        uint32_t bw = (uint32_t)backdrop->w;
+        uint32_t a = (uint32_t)(sky_angle - view) - 1 + n;
+        if (n <= a) a -= n;
+        uint32_t off = (uint32_t)(((uint64_t)a * bw) / n);
+        backdrop->x = (int)(bw - (uint32_t)w) / 2 - (int)off;
+        backdrop->draw();
+        if (bw < (uint32_t)w + off) { backdrop->x += (int)bw; backdrop->draw(); }
+    }
+    if (!no_ground) drawGround2();                                     // 0x42c460 (port: no cache; mode 2)
+    if (overlay) overlay->draw();
+    drawWalls();
 }
 
 // 0x4190c0, run once (0x419170): copy 600 KB ten times; 10 - ms / 25, at least 1.

@@ -416,7 +416,8 @@ void RayTrace::turn(float deg) {
     while (angf < 0.0f) angf = (float)((double)kTwoPi + angf);
     while (!(angf < kTwoPi)) angf = (float)((double)angf - kTwoPi);
     int n = (int)angles.size();
-    view = (int)((double)(int64_t)n * angf / kTwoPi);
+    // the left edge (+30 degrees, 0x513d98 = 1/6) as the view index
+    view = (int)((double)(int64_t)n * ((double)kPi * 0.166666672f + angf) / kTwoPi);
     while (view < 0) view += n;
     while (n <= view) view -= n;
 }

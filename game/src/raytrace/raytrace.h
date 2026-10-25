@@ -87,6 +87,8 @@ struct Attachment {
     Vision::Graphic *g = nullptr;
     bool on = false;
     int frame = -1;
+    int period = -1;                                // +0x184: ms per frame step (-1: not stepped)
+    uint32_t last = 0;                              // +0x04
 };
 
 // A sprite standing in the 3D world (0x42e990, 0xb0 bytes): an animation at (x, z), y up, drawn scaled by distance.
@@ -135,6 +137,9 @@ public:
     Seg *cast(int col, const Seg &ray, Seg *start, Column *out, Seg *end);
     // 0x426480: the columns strictly between lo and hi (already cast): the middle one against both wall lists, each
     // from the start given up to the hit of the neighbouring column, then both halves.
+    void draw() override;                           // v10 0x426710: the frame
+    void release();                                 // 0x429980: frees the walls, sprites, ground
+    bool load(const char *name);                    // 0x4281a0: angles, walls, columns, collision
     void initAngles();                              // 0x427130
     bool loadWalls(const char *name);               // 0x428580 (+ 0x426f00): data\<name>.rtc
     bool loadGround(const char *path);              // 0x42cc80: the .grn (tile names + 128 x 128 grid)
@@ -208,6 +213,11 @@ public:
     int g_sky_top = 0;                              // 0x5a95a8: 240 - pitch / 8
     float camx = 0, camz = 0;                       // +0x568 +0x56c
     int view = 0;                                   // +0x574: the view direction (an index into `angles`)
+    uint32_t frames = 0;                            // +0x1164
+    uint32_t last_time = 0, frame_dt = 1;           // +0x7c +0x80
+    Vision::Graphic *backdrop = nullptr;            // +0x116c: a panorama behind everything (none in London)
+    Vision::Graphic *overlay = nullptr;             // +0x1168
+    bool no_ground = false;                         // +0x1175
     float angf = 0;                                 // +0x570: the angle at the screen's centre (radians)
     bool moved = false, ready = false;              // +0xa5 +0xa4
     std::vector<WallObject *> walls;                // +0x57c (count +0x578)

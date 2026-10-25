@@ -23,7 +23,7 @@ static std::string lower(const std::string &s) {
 
 // ---------------------------------------------------------------- Resource
 Resource::Resource(const char *n) : Object(n) {}           // 0x4194a0
-Resource::~Resource() { blit_forget((Pixelmap *)this); }   // 0x419450
+Resource::~Resource() { blit_forget(reinterpret_cast<Pixelmap *>(static_cast<void *>(this))); }   // 0x419450
 uint8_t *Resource::setSize(uint32_t n) {                   // 0x419390 (+1 for a NUL)
     data.assign((size_t)n + 1, 0);
     data.resize(n);

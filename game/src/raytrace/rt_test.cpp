@@ -15,12 +15,7 @@ struct TestRT : Raytrace::RayTrace {
         else if (walk < 0) moveBack(-walk);
         if (spin != 0) turn(spin);
         if (walk != 0 || spin != 0) tb_log("rttest: cam %.2f,%.2f angle %.3f", camx, camz, angf);
-        horizon = h / 2;
-        groundTable();
-        castColumns();
-        drawSky();
-        drawGround2();
-        drawWalls();
+        RayTrace::draw();
     }
 };
 
@@ -37,9 +32,7 @@ struct RtTestScene : Scene {
         sprites->load();
         ground = ras_open((scene + "_ground").c_str(), "", &data_device());
         ground->load();
-        rt.initAngles();
-        rt.loadWalls(scene.c_str());
-        rt.initCollision();
+        rt.load(scene.c_str());
         tb_log("rttest: range %.1f, boundary %zu segments", rt.range, rt.bsegs.size());
         rt.loadSprites(scene.c_str(), sprites);
         tb_log("rttest: %zu sprites", rt.sprites.size());

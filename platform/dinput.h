@@ -44,6 +44,9 @@ bool tb_input_event(const SDL_Event &e);   // true if it was an input event (con
 void tb_input_update();                    // call once per frame: gamepad motion
 bool tb_input_pop(TbMsg *m);               // next queued message (PeekMessage + PM_REMOVE); false if none
 void tb_input_clear();                     // drop everything queued and release all keys (lost focus)
+// port: in the 3D scenes the d-pad / left stick act as the arrow keys and the shoulders as Shift (up) / Ctrl
+// (down), the right stick moves the cursor; the scenes turn this on and off.
+void tb_input_set_arrows(bool on);
 int16_t tb_GetKeyState(int vk);            // user32 GetKeyState: negative when down, bit 0 = toggled (CapsLock)
 void tb_GetCursorPos(int *x, int *y);      // the cursor, in game coordinates
 
