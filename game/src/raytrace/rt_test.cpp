@@ -1,5 +1,5 @@
 // Desktop test aid (not in the game): TB_TEST_RT=<scene> renders that 3D scene's walls/ground/sky from a fixed
-// camera, TB_RT_CAM="x,z,view,eye" (view = angle index, 0..6*w-1). Start with `tinkerbell rttest`.
+// camera, TB_RT_CAM="x,z,degrees,eye" (set through RayTrace::setCamera). Start with `tinkerbell rttest`.
 #include "raytrace.h"
 #include "tb.h"
 #include <stdlib.h>
@@ -15,6 +15,7 @@ struct TestRT : Raytrace::RayTrace {
         castColumns();
         drawSky();
         drawGround2();
+        drawWalls();
     }
 };
 
@@ -43,9 +44,11 @@ struct RtTestScene : Scene {
         }
         tb_log("rttest: %zu walls, box %.0f,%.0f - %.0f,%.0f; ground offset %d,%d; %zu tiles", rt.segs.size(),
                minx, minz, maxx, maxz, rt.ground_x, rt.ground_z, rt.tiles.size());
-        rt.camx = (minx + maxx) / 2; rt.camz = (minz + maxz) / 2; rt.view = 0; rt.eyef = 100;
+        tb_log("rttest: %zu wall objects", rt.walls.size());
+        float x = (minx + maxx) / 2, z = (minz + maxz) / 2, deg = 0, eye = 100;
         const char *c = getenv("TB_RT_CAM");
-        if (c) sscanf(c, "%f,%f,%d,%f", &rt.camx, &rt.camz, &rt.view, &rt.eyef);
+        if (c) sscanf(c, "%f,%f,%f,%f", &x, &z, &deg, &eye);
+        rt.setCamera(x, eye, z, deg);
         rt.eye = (int)rt.eyef;
         rt.loadAll();
         rt.activate();

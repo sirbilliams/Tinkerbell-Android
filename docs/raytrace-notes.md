@@ -73,5 +73,10 @@ qsort 0x4f54fc), and for the +0x578 entries at +0x57c (two end points each, +0x8
 - project 0x42df80(x, h, z, k, *col, *row): col = view - ftol(n * atan2(dz,dx) / 2pi) - 320 wrapped to +-n/2;
   row = ftol((1/cos(col angle)) * (1/dist) * ((160+eye)*590 - 24000 * (k*0.01) * h * 0.01)); 0x5a95b8 = 2pi
   (float, static init 0x42cff0). Constants: 0x513dd8 1e-12 (zero cos), 0x513dd0 1e-11 (zero dist).
-- Wall object draw 0x42d000: 2 * rating slices of 60 degrees (0x513dc8), ray points at 100000 (0x513dc0);
-  still to port, with the clip 0x42f9f0 (1406 bytes).
+- Wall objects ported (walls.cpp): loader part (name "wall_<tex>_<count+1>", Animation(<tex>) loaded once in loop
+  mode, ends truncated to ints, top = frame width * 2.47), draw 0x42d000 (2 * rating slices; ends' angles from
+  the slice middle in degrees; an end past a slice edge is cut with Line::intersect 0x42f9f0 against that edge's
+  ray, the frame's strips skipped by the cut fraction), band 0x4265c0 (+ linked walls by key), distances + qsort
+  (comparator 0x42cf00, far first), camera setter 0x42a570 (x/eye/z nudged off whole units by 0.01; angle =
+  (deg + 30) * pi/180; view = the left edge's index; +0x570 = the centre angle). Sprites (+0x1138, 0x42e120)
+  still to do: until then drawWalls is the last band only.

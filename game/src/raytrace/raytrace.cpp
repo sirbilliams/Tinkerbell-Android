@@ -34,6 +34,11 @@ uint8_t seg_init(Seg *s, float x1, float z1, float x2, float z2) {   // 0x427560
 }
 
 RayTrace::RayTrace() : Vision::Screen(0, 0, 0, 0, 0, true, true) {}
+RayTrace::~RayTrace() {
+    for (WallObject *o : walls) delete o;
+    for (Seg *s : segs) delete s;
+    for (Vision::Image *t : tiles) delete t;
+}
 
 // 0x4279a0: the corner `a` shares with `b` (a's two ends by its direction flags; the one that is also an end of b,
 // else a's other end).
@@ -231,7 +236,7 @@ static Vision::Pixelmap *find_tex(const char *n40, bool *mirror) {
     return pm;
 }
 
-// 0x428580 (the walls; port: the wall objects, 0x42e5d0, come with their drawing).
+// 0x428580: the walls, each textured one with its wall object (0x42e5d0).
 bool RayTrace::loadWalls(const char *name) {
     char path[300];
     snprintf(path, sizeof path, "data\\%s.rtc", name);                  // 0x535a60
@@ -272,8 +277,9 @@ bool RayTrace::loadWalls(const char *name) {
                 sg->tw = pm->w;                                        // +0x64
                 sg->th = pm->h;                                        // +0x68
                 sg->tex = tex_pixels(pm);
+                make_wall_object(this, pm, x1, z1, x2, z2);
             }
-            sg->angle = atan2((double)z2 - z1, (double)x2 - x1) - 3.14159274f * 0.5f;   // port: TODO check operands
+            sg->angle = atan2((double)z2 - z1, (double)x2 - x1) - (double)3.14159274f * 0.5f;   // 0x513d28 * 0x513298
         }
         if (first) { last->next = first; first->prev = last; }         // circular
         if (list == 0) listA = first; else listB = first;

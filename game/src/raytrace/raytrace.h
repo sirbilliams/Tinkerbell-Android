@@ -4,6 +4,7 @@
 // by distance. Notes: docs/raytrace-notes.md. Work in progress: only what is reconstructed is here.
 #pragma once
 #include "../vision/engine.h"
+#include "../vision/animation.h"
 #include <stdint.h>
 #include <string>
 #include <vector>
@@ -48,9 +49,41 @@ struct Angle {
     int idx = 0, idz = 0;                           // +0x0c +0x10: dx, dz * 4096
 };
 
+// A 2D line as the wall draw keeps it (x1, z1, x2, z2: four floats), with its helpers (0x42f850..0x42f9f0).
+struct Line {
+    float x1, z1, x2, z2;
+    bool intercept(float *b) const;                 // 0x42f850: z at x = 0 (false for a vertical line)
+    bool inX(float x) const;                        // 0x42f890: x within the line's x range (inclusive)
+    bool inZ(float z) const;                        // 0x42f8f0
+    bool zAt(float x, float *z) const;              // 0x42f950
+    bool intersect(const Line &o, float *x, float *z) const;   // 0x42f9f0: where the two segments meet
+};
+
+// A textured wall drawn as a projected quad (0x42e5d0, 0xb4 bytes). One per textured wall of the .rtc, named
+// "wall_<texture>_<NN>", its frames the animation named after the texture.
+struct WallObject {
+    WallObject(const char *name, const char *prefix);   // 0x42e5d0
+    ~WallObject();
+    bool loaded = false;                            // +0x00
+    WallObject *links[10] = {};                     // +0x04..+0x28: walls drawn right after it, by key
+    bool f2c = false;                               // +0x2c
+    Vision::Animation *anim = nullptr;              // +0x30
+    uint32_t last = 0;                              // +0x34: when the frame last stepped
+    float dist = 0;                                 // +0x38: the farther end's distance (this frame)
+    std::string name;                               // +0x3c
+    std::string prefix;                             // +0x64
+    float x1 = 0, bottom = 0, z1 = 0;               // +0x8c +0x90 +0x94
+    float x2 = 0, top = 0, z2 = 0;                  // +0x98 +0x9c +0xa0 (top = the frame's width * 2.47)
+    float k = 100.0f;                               // +0xa4: height percent
+    int key = 0;                                    // +0xa8: draw order among linked walls
+    uint32_t frame_ms = 50;                         // +0xac
+    bool on = false;                                // +0xb0
+};
+
 class RayTrace : public Vision::Screen {
 public:
     RayTrace();
+    ~RayTrace() override;                           // port: frees what the loaders made (the exe's 0x429ff0 is not ported yet)
     // 0x425f60: cast the ray `ray` (a segment from the camera) for screen column `col` against the walls from
     // `start` to `end` (null: start->prev); fills `out`, returns the wall hit (or the invisible one standing in).
     Seg *cast(int col, const Seg &ray, Seg *start, Column *out, Seg *end);
@@ -64,6 +97,11 @@ public:
     void drawGround2();                             // 0x42bf50 (the mode for a processor rating >= 4)
     void castColumns();                             // the column part of 0x426710
     static int speedRating();                       // 0x419170 / 0x4190c0
+    void setCamera(float x, float eye, float z, float deg);   // 0x42a570 (deg: the view direction in degrees)
+    void project(float x, float h, float z, float k, int *col, int *row);   // 0x42df80
+    void drawWall(WallObject *o);                   // 0x42d000
+    void drawBand(double lo, double hi);            // 0x4265c0: the walls whose distance is in [lo, hi]
+    void drawWalls();                               // the wall part of 0x426710 (distances, sort, bands)
     void subdivide(unsigned lo, unsigned hi, Seg *startA, Seg *startB, Seg *endA, Seg *endB);
     Column *nextColumn() { return &columns[ncolumns++]; }   // +0x548[+0x54c++]
 
@@ -101,8 +139,16 @@ public:
     int g_sky_top = 0;                              // 0x5a95a8: 240 - pitch / 8
     float camx = 0, camz = 0;                       // +0x568 +0x56c
     int view = 0;                                   // +0x574: the view direction (an index into `angles`)
+    float angf = 0;                                 // +0x570: the angle at the screen's centre (radians)
+    bool moved = false, ready = false;              // +0xa5 +0xa4
+    std::vector<WallObject *> walls;                // +0x57c (count +0x578)
+    struct Order { int idx; float dist; };
+    std::vector<Order> order;                       // +0x964: walls by distance, far first
 private:
     void fallback(Seg *start, Seg *end, float *x, float *z);   // 0x4279a0 (port: TODO)
 };
+
+// part of 0x428580: the wall object for a textured wall (walls.cpp)
+void make_wall_object(RayTrace *rt, Vision::Pixelmap *tex, float x1, float z1, float x2, float z2);
 
 }  // namespace Raytrace
