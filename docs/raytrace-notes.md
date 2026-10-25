@@ -78,5 +78,10 @@ qsort 0x4f54fc), and for the +0x578 entries at +0x57c (two end points each, +0x8
   the slice middle in degrees; an end past a slice edge is cut with Line::intersect 0x42f9f0 against that edge's
   ray, the frame's strips skipped by the cut fraction), band 0x4265c0 (+ linked walls by key), distances + qsort
   (comparator 0x42cf00, far first), camera setter 0x42a570 (x/eye/z nudged off whole units by 0.01; angle =
-  (deg + 30) * pi/180; view = the left edge's index; +0x570 = the centre angle). Sprites (+0x1138, 0x42e120)
-  still to do: until then drawWalls is the last band only.
+  (deg + 30) * pi/180; view = the left edge's index; +0x570 = the centre angle).
+- Sprites ported (sprites.cpp): .rts loader 0x4aa570 (header 0x58, count, name[40], anim[40] minus trailing
+  digits, 13 u32: mode, x, y, z, scale, +0x8c, radius, height, frame ms, +0x90..+0x9c), Sprite3D 0x42e990 /
+  load 0x42ef20, boxes 0x429380 (list +0xa8), draw 0x42e120 (scale = 24000/dist*k/cos, image centred at
+  (col, row) from the canvas centre), attachments sorted by z 0x42f760. Draw order: sprites past maxdist, then
+  band(sprite dist, previous) + sprite, then band(0, last). Still to do: sprite frame stepping (not in 0x426710;
+  probably the scene's task), the +0xa0 box refresh 0x4294b0.

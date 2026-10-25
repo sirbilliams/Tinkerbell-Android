@@ -80,6 +80,46 @@ struct WallObject {
     bool on = false;                                // +0xb0
 };
 
+// A graphic drawn with a sprite, offset and scaled with it (+0x148 prev, +0x14c next, +0x150 graphic, +0x17c on,
+// +0x180 only with this frame of the sprite, -1 = any).
+struct Attachment {
+    Attachment *prev = nullptr, *next = nullptr;
+    Vision::Graphic *g = nullptr;
+    bool on = false;
+    int frame = -1;
+};
+
+// A sprite standing in the 3D world (0x42e990, 0xb0 bytes): an animation at (x, z), y up, drawn scaled by distance.
+struct Sprite3D {
+    Sprite3D(const char *name, const char *prefix, int hit);   // 0x42e990
+    ~Sprite3D();
+    void load();                                    // 0x42ef20
+    bool loaded = false;                            // +0x00
+    std::vector<std::pair<std::string, Vision::Animation *>> anims;   // +0x04: by name (the main one first)
+    float dist = 0;                                 // +0x14
+    std::string name;                               // +0x18
+    std::string prefix;                             // +0x40
+    Attachment *attached = nullptr;                 // +0x68
+    int hit = 1;                                    // +0x6c
+    Vision::Animation *anim = nullptr;              // +0x70
+    uint32_t last = 0;                              // +0x74
+    float x = 0, y = 0, z = 0;                      // +0x78 +0x7c +0x80
+    float scale = 100.0f;                           // +0x84 (percent)
+    int mode = 1;                                   // +0x88 (2: attachments only on frame 0)
+    float f8c = 90.0f;                              // +0x8c
+    uint32_t f90 = 0, f94 = 0, f98 = 0, f9c = 0;    // +0x90..+0x9c
+    bool box_flag = false;                          // +0xa0
+    float radius = 0;                               // +0xa4: the collision box's half width
+    float bheight = 0;                              // +0xa8: and its height
+    uint32_t frame_ms = 50;                         // +0xac
+};
+
+// A collision box (0x44 bytes, list at RayTrace +0xa8): "<sprite>_box".
+struct Box {
+    std::string name;                               // +0x00 (0x28)
+    float minx = 0, y0 = 0, minz = 0, maxx = 0, y1 = 0, maxz = 0;   // +0x28..+0x3c
+};
+
 class RayTrace : public Vision::Screen {
 public:
     RayTrace();
@@ -101,7 +141,13 @@ public:
     void project(float x, float h, float z, float k, int *col, int *row);   // 0x42df80
     void drawWall(WallObject *o);                   // 0x42d000
     void drawBand(double lo, double hi);            // 0x4265c0: the walls whose distance is in [lo, hi]
-    void drawWalls();                               // the wall part of 0x426710 (distances, sort, bands)
+    void drawWalls();                               // the end of 0x426710: walls and sprites by distance
+    Sprite3D *addSprite(const char *name, const char *prefix, int hit);   // 0x42d9d0
+    Sprite3D *findSprite(const char *name);         // 0x42dc70
+    void makeBox(Sprite3D *s, bool flag);           // 0x429580 -> 0x429380
+    void drawSprite(int i);                         // 0x42e120
+    // 0x4aa570 (Raytrace_Scene's, on its RayTrace): data\<name>.rts, the sprites loaded from `pack`
+    bool loadSprites(const char *name, Vision::Ras *pack);
     void subdivide(unsigned lo, unsigned hi, Seg *startA, Seg *startB, Seg *endA, Seg *endB);
     Column *nextColumn() { return &columns[ncolumns++]; }   // +0x548[+0x54c++]
 
@@ -144,6 +190,9 @@ public:
     std::vector<WallObject *> walls;                // +0x57c (count +0x578)
     struct Order { int idx; float dist; };
     std::vector<Order> order;                       // +0x964: walls by distance, far first
+    std::vector<Sprite3D *> sprites;                // +0x1138
+    std::vector<Order> sorder;                      // +0x1148: sprites by distance, far first
+    std::vector<Box *> boxes;                       // +0xa8 (a linked list in the exe, in this order)
 private:
     void fallback(Seg *start, Seg *end, float *x, float *z);   // 0x4279a0 (port: TODO)
 };

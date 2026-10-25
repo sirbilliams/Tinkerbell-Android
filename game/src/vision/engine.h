@@ -250,7 +250,7 @@ public:
 };
 Ras *ras_open(const char *name, const char *sub, Device *dev);   // 0x419b90
 Resource *ras_find(const char *name, const char *ext);           // 0x41a3d0
-void ras_set_current(Ras *r);                                    // 0x41a920
+Ras *ras_set_current(Ras *r);                                    // 0x41a920
 void ras_close(Ras *r);                                          // 0x41b050 (drop the records) + 0x419620 (release)
 Device &data_device();                                           // 0x5a70b8
 std::string &cd_root();                                          // 0x5a7568: "<cd>:\<dir>\" (port: the game folder)

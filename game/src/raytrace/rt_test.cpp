@@ -22,17 +22,21 @@ struct TestRT : Raytrace::RayTrace {
 struct RtTestScene : Scene {
     TestRT rt;
     std::string scene;
-    Ras *walls = nullptr, *ground = nullptr;
+    Ras *walls = nullptr, *ground = nullptr, *sprites = nullptr;
     explicit RtTestScene(const char *s) : Scene("rttest"), scene(s) {}
     void enter() override {
         walls = ras_open((scene + "_walls").c_str(), "", &data_device());
         walls->load();
         ras_set_current(walls);
+        sprites = ras_open((scene + "_sprites").c_str(), "", &data_device());
+        sprites->load();
         ground = ras_open((scene + "_ground").c_str(), "", &data_device());
         ground->load();
         rt.initAngles();
         rt.range = 4096.0;
         rt.loadWalls(scene.c_str());
+        rt.loadSprites(scene.c_str(), sprites);
+        tb_log("rttest: %zu sprites", rt.sprites.size());
         rt.loadGround(("data\\" + scene + ".grn").c_str());
         float minx = 1e9f, minz = 1e9f, maxx = -1e9f, maxz = -1e9f;
         for (size_t i = 0; i < rt.segs.size(); i++) {

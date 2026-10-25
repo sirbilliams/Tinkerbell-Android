@@ -314,11 +314,20 @@ static int by_distance(const void *a, const void *b) {   // 0x42cf00: far first
     return 0;
 }
 
-// The end of 0x426710: each wall's distance (its farther end), sorted far to near (qsort 0x4f54fc), then the
-// sprites from far to near with the walls of each distance band before them.
-// port: the sprites (+0x1138) aren't in yet, so this is the last band only: every wall, far to near. glibc's qsort
-// may order walls of equal distance differently from MSVC's.
+// The end of 0x426710: each sprite's and wall's distance (a wall's: its farther end), both sorted far to near
+// (qsort 0x4f54fc); sprites farther than every wall hit first, then each sprite after the walls from its distance
+// out to the previous one's, then the walls nearer than the last.
+// port: glibc's qsort may order equal distances differently from MSVC's.
 void RayTrace::drawWalls() {
+    sorder.resize(sprites.size());
+    for (size_t i = 0; i < sprites.size(); i++) {
+        Sprite3D *sp = sprites[i];
+        double dx = (double)sp->x - camx, dz = (double)sp->z - camz;
+        sp->dist = (float)sqrt(dx * dx + dz * dz);
+        sorder[i].idx = (int)i;
+        sorder[i].dist = sp->dist;
+    }
+    if (!sorder.empty()) qsort(sorder.data(), sorder.size(), sizeof(Order), by_distance);
     order.resize(walls.size());
     for (size_t i = 0; i < walls.size(); i++) {
         WallObject *o = walls[i];
@@ -331,7 +340,19 @@ void RayTrace::drawWalls() {
         order[i].dist = o->dist;
     }
     if (!order.empty()) qsort(order.data(), order.size(), sizeof(Order), by_distance);
-    drawBand(0.0, DBL_MAX);
+    size_t i = 0;
+    for (; i < sorder.size(); i++) {
+        if (sorder[i].dist < maxdist) break;
+        drawSprite(sorder[i].idx);
+    }
+    double hi = DBL_MAX;
+    for (; i < sorder.size(); i++) {
+        double lo = sorder[i].dist;
+        drawBand(lo, hi);
+        hi = lo;
+        drawSprite(sorder[i].idx);
+    }
+    drawBand(0.0, hi);
 }
 
 }  // namespace Raytrace

@@ -38,6 +38,8 @@ RayTrace::~RayTrace() {
     for (WallObject *o : walls) delete o;
     for (Seg *s : segs) delete s;
     for (Vision::Image *t : tiles) delete t;
+    for (Sprite3D *s : sprites) delete s;
+    for (Box *b : boxes) delete b;
 }
 
 // 0x4279a0: the corner `a` shares with `b` (a's two ends by its direction flags; the one that is also an end of b,

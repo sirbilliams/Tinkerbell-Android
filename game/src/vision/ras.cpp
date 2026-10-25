@@ -201,7 +201,7 @@ Ras *ras_open(const char *n, const char *s, Device *dev) {
     return found;
 }
 
-void ras_set_current(Ras *r) { g_current_ras = r; }        // 0x41a920
+Ras *ras_set_current(Ras *r) { Ras *p = g_current_ras; g_current_ras = r; return p; }   // 0x41a920: returns the previous one
 
 // 0x41a3d0: the current Ras first, then every Ras, then a loose "<name>.<ext>" in the data folder ("Loner Ras").
 Resource *ras_find(const char *n, const char *ext) {
