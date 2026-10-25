@@ -1,6 +1,15 @@
 # Next session
 
-## Latest (Oct 24, 21:05, paused by Bill, ~37%)
+## Latest (Oct 25, 00:00, ~40%)
+- London is enterable from the sign-in room (Big Ben): game/src/scenes/raytrace_scene.* (Raytrace_Scene open /
+  physics / sprite frames, MovementInputTask, London_Scene = plain Raytrace_Scene for now). RayTrace::draw
+  (0x426710), load (0x4281a0), release (0x429980). Gamepad: d-pad / left stick = arrows, R1 up, L1 down,
+  right stick = cursor (tb_input_set_arrows). Start camera = Raytrace_Scene defaults (3000.1, 0.1, 3000.1,
+  90.1: on the ground facing the hedge). `tinkerbell london` starts there; TB_FAKE_INPUT "down vk,0"/"up vk,0".
+- Next: TinkerbellRaytraceScene 0x4ab0f0 (hover v32 0x443820, Tinkerbell3D, toolbar, global shell), London
+  enter 0x4b5800 / run 0x4b5300 and its scripts.
+
+## Earlier (Oct 24, 21:05, paused by Bill, ~37%)
 - 3D engine (game/src/raytrace/): walls (walls.cpp), sprites (sprites.cpp), movement + collision
   (collision.cpp), camera setter, all pushed to integ (68c1ea4). Test: `TB_TEST_RT=london tinkerbell rttest`,
   TB_RT_CAM="x,z,deg,eye", TB_RT_WALK="step,turn" per frame. ASan/UBSan clean. Screenshots match the art.
