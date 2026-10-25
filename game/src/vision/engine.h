@@ -19,6 +19,7 @@ using Gorilla::Object;
 bool tb_exiting();                 // 0x4215b0: 0x5a7638 (and 0x5a9598, list teardown skipped) at exit
 void tb_set_exiting();
 uint32_t frame_time();             // 0x4207b0: 0x5a7520, the time of the current frame (ms since start)
+int vision_random(int n);          // 0x425d40: (rand() * n) >> 15, 0..n-1 (MSVC's rand)
 uint32_t real_time();              // 0x4207c0: timeGetTime() - 0x5a7524
 void set_active(bool on);          // 0x420750: WM_ACTIVATEAPP; time stops while inactive
 bool is_active();                  // 0x420740: 0x5a7534
@@ -250,6 +251,7 @@ public:
 Ras *ras_open(const char *name, const char *sub, Device *dev);   // 0x419b90
 Resource *ras_find(const char *name, const char *ext);           // 0x41a3d0
 void ras_set_current(Ras *r);                                    // 0x41a920
+void ras_close(Ras *r);                                          // 0x41b050 (drop the records) + 0x419620 (release)
 Device &data_device();                                           // 0x5a70b8
 std::string &cd_root();                                          // 0x5a7568: "<cd>:\<dir>\" (port: the game folder)
 

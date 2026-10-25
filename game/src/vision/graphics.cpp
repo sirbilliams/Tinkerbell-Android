@@ -3,10 +3,12 @@
 #include "text.h"
 #include "tb.h"
 #include "../../../platform/ddraw.h"
+#include "../../../platform/dinput.h"
 #include <string.h>
 #include <algorithm>
 
 namespace Vision {
+extern Graphic *g_cursor_graphic;           // 0x5a69c4 (defined in scenes/voacts.cpp)
 
 // ---------------------------------------------------------------- the DirectDraw objects (0x5a6794 ...)
 static TbDirectDraw *g_dd = nullptr;     // 0x5a6794
@@ -392,7 +394,15 @@ struct ScreenKind : ServiceKind {
         if (g_bg) g_back->Blt(0, 0, g_bg);           // 0x40e360
         lock_canvas();                               // 0x40e390
         for (Node *n = screen_list().first; n; n = n->next) ((Screen *)n->obj)->draw();   // +0x28
-        // the cursor (0x5a69c4, drawn last when visible): the game's cursor class sets it (port: TODO with the cursor)
+        // the cursor (0x5a69c4), drawn last when visible: 0x411b10 places it at the mouse (0x4119f0: GetCursorPos
+        // minus the window's spot, minus the hotspot 0x5a6930/34, which nothing sets) and draws it (0x40e680).
+        if (g_cursor_graphic && g_cursor_graphic->visible) {
+            int mx, my;
+            tb_GetCursorPos(&mx, &my);               // port: already in game coordinates (platform/dinput)
+            g_cursor_graphic->x = mx;
+            g_cursor_graphic->y = my;
+            g_cursor_graphic->draw();
+        }
         unlock_canvas();                             // 0x40e620
         // 0x5a675c / 0x5a666c: a GDI pass over the text graphics (lane C's DC) when any are shown
         g_primary->Blt(0, 0, g_back);                // the flip (vtbl +0x1c): presents

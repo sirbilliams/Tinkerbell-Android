@@ -1,4 +1,6 @@
 // My_Stage, the two movie scenes ("Bumper", "Intro") and the sign-in room (first pass), reconstructed.
+#include "signin.h"
+#include "state.h"
 #include "game.h"
 #include "../vision/engine.h"
 #include "../vision/qtmovie.h"
@@ -17,8 +19,8 @@ struct My_Stage : Stage {
     // 0x4e72a0: Stage("Tinker Bell", "Bumper", *0x543310 = "Tinker Bell\setup\game", 640, 480)
     My_Stage() : Stage("Tinker Bell", "Bumper", "Tinker Bell\\setup\\game", 640, 480) {}
     // +0x10 0x4e72d0: creates the game's global state object (0x1840 bytes, 0x4ec6e0) into 0x63171c.
-    // port: TODO (lane A/scenes): the game state (saves, tokens, the "lost" default) is not ported yet.
-    void afterServices() override {}
+    // port: the state is a static (Game::state()); of its constructor only 0x4ec920 is ported so far.
+    void afterServices() override { Game::state().initGlobals(); }
 };
 
 // The movie being shown (QuickTime drew into the window by itself; the port presents its frames).
@@ -91,44 +93,10 @@ struct SoundKind : ServiceKind {
     void shutdown() override { tb_dsound_destroy(); }
 };
 
-// ---------------------------------------------------------------- SignIn_Scene (vtable 0x5168f0), first pass
-// 0x4b1050 ctor / 0x4b1800 enter (v19) / 0x4b2920 leave (v20). Only the room itself is drawn so far.
-// port: TODO the buttons (0x4b0360 / 0x4afe70), Wendy (0x4b4310), the cursor (0x4afc70), the name entry, the
-// voice-overs (0x4c1530 / 0x4c46e0) and the save slots (0x4ea4f0).
-struct SignIn_Scene : Scene {
-    Sound crumple;                           // +0x130 "SIGN_FX_crumple"
-    Screen screen;                           // +0x478
-    Mouse mouse;                             // +0x4f4
-    Keyboard keyboard;                       // +0x528
-    Image background;                        // +0x560
-    Ras *ras = nullptr;                      // +0x55c
-    SignIn_Scene() : Scene("signin"), crumple("SIGN_FX_crumple"), screen(0, 0, 0, 0, 0, true, true),
-                     background("SIGN_IF_background_01", 0, 0, 0, 0, 0, 0, true) {}
-    void enter() override {                  // 0x4b1800
-        ras = ras_open(name(), "", &data_device());
-        ras->load();                         // 0x41aa20
-        ras_set_current(ras);                // 0x41a920
-        mouse.activate(); mouse.setClient(this);
-        keyboard.activate(); keyboard.setClient(this);
-        screen.loadAll();
-        background.load();                   // +0x3c
-        screen.layer(0)->add(&background);
-        screen.activate();
-        reset();
-        activate();
-    }
-    void leave() override {                  // 0x4b2920
-        background.unload();
-        mouse.deactivate();
-        keyboard.deactivate();
-        screen.deactivate();
-        deactivate();
-    }
-};
-
 }  // namespace
 
 namespace Vision { void register_scene_task_kinds(); void register_screen_kind(); }
+static bool vo_suppressed_flag() { return Game::state().vo_suppressed; }
 
 // The exe's static constructors, in their order (initlist 0x532004): the service kinds (Input, Keyboard,
 // Mouse, Ras, Scene, Screen, Sound, Task, QTMovie), the scenes, My_Stage.
@@ -139,6 +107,7 @@ void tb_game_register() {
     static QTMovieKind qt;
     static MovieScene bumper("Bumper", "DIbumper", "Intro");          // 0x48aee0
     static MovieScene intro("Intro", "LOND_MO_intro", "signin");     // 0x48b150
-    static SignIn_Scene signin;                                       // 0x4afc40
+    static Game::SignIn_Scene signin;                                 // 0x4afc40 (scenes/signin.cpp)
+    g_vo_suppressed = vo_suppressed_flag;                             // *(0x63171c + 0x560)
     static My_Stage st;                                               // 0x4e7280
 }

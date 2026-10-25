@@ -226,4 +226,21 @@ Resource *ras_find(const char *n, const char *ext) {
     return r;
 }
 
+
+// 0x41b050 then 0x419620, as the scenes call them on leaving: the Ras drops its records, then loses a user and goes
+// with the last one (clearing the current Ras if it was this one).
+void ras_close(Ras *r) {
+    if (!r || tb_exiting()) return;
+    for (std::map<std::string, Resource *>::iterator it = r->table.begin(); it != r->table.end(); ++it) {   // 0x41b050
+        it->second->ras = nullptr;
+        it->second->unref();
+    }
+    r->table.clear();
+    r->loaded = false;
+    if (r->users > 0 && --r->users == 0) {                    // 0x419620
+        if (g_current_ras == r) g_current_ras = nullptr;
+        delete r;
+    }
+}
+
 }  // namespace Vision
