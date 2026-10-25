@@ -1,5 +1,19 @@
 # Next session
 
+## Latest (Oct 24, 21:05, paused by Bill, ~37%)
+- 3D engine (game/src/raytrace/): walls (walls.cpp), sprites (sprites.cpp), movement + collision
+  (collision.cpp), camera setter, all pushed to integ (68c1ea4). Test: `TB_TEST_RT=london tinkerbell rttest`,
+  TB_RT_CAM="x,z,deg,eye", TB_RT_WALK="step,turn" per frame. ASan/UBSan clean. Screenshots match the art.
+- **Next, in order:** (1) RayTrace::draw override = 0x426710 (frame/dt, moved -> castColumns with maxdist=1.0,
+  g_sky_top = 240 - eye/8, sky, backdrop +0x116c, ground 0x42c460 cache, drawWalls; sprite box refresh
+  0x4294b0). (2) Raytrace_Scene (vtable 0x5162f4, ctor ~_free.c:92180: camera default 3000.1/0.1/3000.1/90.1,
+  physics consts in v28 0x4a96d0), open v27 0x4a9ca0, physics v29 0x4a9760 (asm decoded in notes), isFlying
+  v31 (eye > 5), sprite animation v22 0x4a9a70, MovementInputTask 0x4aaa30 (arrows/shift/ctrl into
+  +0x1684..9, overrides +0xe0..+0xf4). (3) A first walkable "london" + APK. (4) TinkerbellRaytraceScene
+  0x4ab0f0 (Tinkerbell3D 0x4da4a0, 0x4befe0, toolbar 0x4efd50, global shell 0x63171c), London enter
+  0x4b5800 (inside r2's 0x4b5300 range), London run 0x4b5300 (scripts +0x28e8/+0x29c8/+0x2a94/+0x2efc in
+  turn, random VO timers, then change_scene("lost_tutorial")).
+
 ## Latest (Oct 24, evening, ~28%)
 - Sign-in room reconstructed by the lead (game/src/scenes/signin.*, acts.*, vision/faderect.*): frames as save
   slots, place/character/skill choice, Wendy with lip sync, idle prompts and blinking hints, basket delete,

@@ -85,3 +85,19 @@ qsort 0x4f54fc), and for the +0x578 entries at +0x57c (two end points each, +0x8
   (col, row) from the canvas centre), attachments sorted by z 0x42f760. Draw order: sprites past maxdist, then
   band(sprite dist, previous) + sprite, then band(0, last). Still to do: sprite frame stepping (not in 0x426710;
   probably the scene's task), the +0xa0 box refresh 0x4294b0.
+
+## Movement and the scene (decoded Oct 24)
+- Collision (collision.cpp): boundary = list A walked by 0x427a80, each wall moved 150 in (0x427760), collinear
+  ones merged, cut at neighbours (0x427b70; join 0x427f00). canMove 0x42b580: odd crossings of the ray
+  (x,z)->(x,z+2*range) with the boundary = inside; boxes at eye-117.07; else +0x560 = the crossed segment's
+  angle. Slide: along that angle +-90 deg, the side nearer the view (back: nearer the reverse), test 0x42b910.
+  Barriers +0x1158 {Line, y0, y1} 0x42d700. range 0x4272e0 = max corner distance + 1.
+- Scene physics v29 0x4a9760: dt = clamp(now - last, 20..200 ms) * 0.001; speed>=0 ? forward(dt*speed) :
+  back(-dt*speed); vspeed>=0 ? raise : lower (landed -> vspeed 0 when the drop was < a quarter and > 1);
+  right turns -dt*rate, left +dt*rate; friction (flying +0x16bc else +0x16b8) when neither fwd nor back
+  (|speed| < max*0.1 -> 0); fwd +accel, back -brake, clamp +-max; no up/down -> vspeed 0; up +, down -,
+  minus gravity, clamp +-vmax. Fields +0x168c speed, +0x1690 max 400, +0x1694 vspeed, +0x1698 vmax 200,
+  +0x169c turn 40, +0x16a4 accel 400, +0x16a8 brake 400, +0x16ac up 700, +0x16b0 down 500, +0x16b4 gravity 100,
+  +0x16b8 friction 8, +0x16bc 6.
+- RayTrace::draw 0x426710: sky writes +0x51c itself (the draw's own +0x51c sum is dead); g_sky_top =
+  240 - ftol(eye)/8, >= 0; backdrop +0x116c scrolled by (+0x1178 - view - 1 + n) * bw / n, drawn twice.

@@ -61,3 +61,7 @@ Phase 0 5% | desktop reaches the sign-in room 20% | first APK on the Thor 25% | 
 
 ## Status
 See docs/NEXT-SESSION.md.
+
+## Oct 24 pause (21:05)
+See NEXT-SESSION.md "Latest". integ has the 3D engine through collision; main is behind integ
+(last APK = sign-in room). No uncommitted work.
