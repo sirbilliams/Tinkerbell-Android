@@ -96,6 +96,7 @@ struct SoundKind : ServiceKind {
 }  // namespace
 
 namespace Vision { void register_scene_task_kinds(); void register_screen_kind(); }
+void rt_test_register();
 static bool vo_suppressed_flag() { return Game::state().vo_suppressed; }
 
 // The exe's static constructors, in their order (initlist 0x532004): the service kinds (Input, Keyboard,
@@ -109,5 +110,6 @@ void tb_game_register() {
     static MovieScene intro("Intro", "LOND_MO_intro", "signin");     // 0x48b150
     static Game::SignIn_Scene signin;                                 // 0x4afc40 (scenes/signin.cpp)
     g_vo_suppressed = vo_suppressed_flag;                             // *(0x63171c + 0x560)
+    rt_test_register();                                              // test aid (TB_TEST_RT)
     static My_Stage st;                                               // 0x4e7280
 }

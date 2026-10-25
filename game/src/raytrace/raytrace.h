@@ -57,6 +57,13 @@ public:
     // 0x426480: the columns strictly between lo and hi (already cast): the middle one against both wall lists, each
     // from the start given up to the hit of the neighbouring column, then both halves.
     void initAngles();                              // 0x427130
+    bool loadWalls(const char *name);               // 0x428580 (+ 0x426f00): data\<name>.rtc
+    bool loadGround(const char *path);              // 0x42cc80: the .grn (tile names + 128 x 128 grid)
+    void groundTable();                             // 0x427620
+    void drawSky();                                 // 0x42a140
+    void drawGround2();                             // 0x42bf50 (the mode for a processor rating >= 4)
+    void castColumns();                             // the column part of 0x426710
+    static int speedRating();                       // 0x419170 / 0x4190c0
     void subdivide(unsigned lo, unsigned hi, Seg *startA, Seg *startB, Seg *endA, Seg *endB);
     Column *nextColumn() { return &columns[ncolumns++]; }   // +0x548[+0x54c++]
 
@@ -69,6 +76,29 @@ public:
     std::vector<Column> columns;                    // +0x548: two per screen column (w * 0x60 bytes)
     int ncolumns = 0;                               // +0x54c
     std::vector<Angle> angles;                      // +0x528 / +0x52c
+    // the wall textures (+0xb0 count, +0xb4 = their records, +0x4bc mirrored flags)
+    std::vector<Vision::Pixelmap *> textures;
+    std::vector<uint8_t> mirrored;
+    int ground_tex = 0;                             // +0x4c0
+    int sky_tex = 0;                                // +0x518
+    int sky_angle = 0;                              // +0x520
+    bool sky_clip = true;                           // +0x524
+    int sky_rows = 0;                               // +0x51c
+    Seg *listA = nullptr, *listB = nullptr;         // +0x534 +0x538
+    std::vector<Seg *> segs;                        // port: owns the Seg allocations
+    // the ground: +0x4f8/+0x4fc offset, the tile images (+0xb8/+0xbc), the 128 x 128 grid of tile pixels (+0x514)
+    int ground_x = 0, ground_z = 0;
+    std::vector<Vision::Image *> tiles;
+    std::vector<const uint16_t *> grid;
+    uint32_t g_umask = 0, g_vmask = 0, g_tmaskx = 0, g_tmasky = 0;   // +0x4f4 +0x4f0 +0x50c +0x508
+    int g_vshift = 0, g_tshiftx = 0, g_tshifty = 0;                  // +0x4ec +0x504 +0x500
+    float eyef = 0;                                 // +0xac: the camera height as set
+    int eye_built = 0x75bcd15;                      // +0x9c: the height the table was built for
+    std::vector<int> rowscale;                      // +0x98: (h/2 * 256) / (row + 1)
+    std::vector<int> gtable;                        // +0x4d4: per half-screen column, h/2 distances
+    int ground_mode = 2;                            // +0x4d8
+    int ground_rows = 0;                            // +0x4e4: the rows the ground covers (its cache)
+    int g_sky_top = 0;                              // 0x5a95a8: 240 - pitch / 8
     float camx = 0, camz = 0;                       // +0x568 +0x56c
     int view = 0;                                   // +0x574: the view direction (an index into `angles`)
 private:
