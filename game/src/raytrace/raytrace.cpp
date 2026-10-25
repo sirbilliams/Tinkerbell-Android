@@ -40,6 +40,7 @@ RayTrace::~RayTrace() {
     for (Vision::Image *t : tiles) delete t;
     for (Sprite3D *s : sprites) delete s;
     for (Box *b : boxes) delete b;
+    for (Seg *s : bsegs) delete s;
 }
 
 // 0x4279a0: the corner `a` shares with `b` (a's two ends by its direction flags; the one that is also an end of b,
@@ -286,6 +287,7 @@ bool RayTrace::loadWalls(const char *name) {
         if (first) { last->next = first; first->prev = last; }         // circular
         if (list == 0) listA = first; else listB = first;
     }
+    range = wallRange();                                               // +0x540
     fclose(f);
     return true;
 }

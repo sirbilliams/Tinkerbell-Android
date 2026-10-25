@@ -9,7 +9,12 @@ namespace {
 using namespace Vision;
 
 struct TestRT : Raytrace::RayTrace {
+    float walk = 0, spin = 0;                        // TB_RT_WALK="step,turn" per frame
     void draw() override {
+        if (walk > 0) moveForward(walk);
+        else if (walk < 0) moveBack(-walk);
+        if (spin != 0) turn(spin);
+        if (walk != 0 || spin != 0) tb_log("rttest: cam %.2f,%.2f angle %.3f", camx, camz, angf);
         horizon = h / 2;
         groundTable();
         castColumns();
@@ -33,8 +38,9 @@ struct RtTestScene : Scene {
         ground = ras_open((scene + "_ground").c_str(), "", &data_device());
         ground->load();
         rt.initAngles();
-        rt.range = 4096.0;
         rt.loadWalls(scene.c_str());
+        rt.initCollision();
+        tb_log("rttest: range %.1f, boundary %zu segments", rt.range, rt.bsegs.size());
         rt.loadSprites(scene.c_str(), sprites);
         tb_log("rttest: %zu sprites", rt.sprites.size());
         rt.loadGround(("data\\" + scene + ".grn").c_str());
@@ -53,6 +59,7 @@ struct RtTestScene : Scene {
         const char *c = getenv("TB_RT_CAM");
         if (c) sscanf(c, "%f,%f,%f,%f", &x, &z, &deg, &eye);
         rt.setCamera(x, eye, z, deg);
+        if (const char *w = getenv("TB_RT_WALK")) sscanf(w, "%f,%f", &rt.walk, &rt.spin);
         rt.eye = (int)rt.eyef;
         rt.loadAll();
         rt.activate();

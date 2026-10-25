@@ -120,6 +120,12 @@ struct Box {
     float minx = 0, y0 = 0, minz = 0, maxx = 0, y1 = 0, maxz = 0;   // +0x28..+0x3c
 };
 
+// A line the camera can't cross between two heights (+0x1158 entries).
+struct Barrier {
+    Line line;
+    float y0 = 0, y1 = 0;                           // +0x10 +0x14
+};
+
 class RayTrace : public Vision::Screen {
 public:
     RayTrace();
@@ -146,6 +152,23 @@ public:
     Sprite3D *findSprite(const char *name);         // 0x42dc70
     void makeBox(Sprite3D *s, bool flag);           // 0x429580 -> 0x429380
     void drawSprite(int i);                         // 0x42e120
+    // movement and collision (collision.cpp)
+    void offsetSeg(Seg *src, Seg *out, int dist, double ang);   // 0x427760
+    Seg *nextBoundary(Seg *s);                      // 0x427a80
+    Seg *buildBoundary();                           // 0x427b70
+    void initCollision();                           // the end of 0x4281a0
+    bool pointInside(float x, float z);             // 0x42ba80
+    Box *boxAt(float x, float z);
+    bool canMove(float x, float z);                 // 0x42b580
+    bool canSlide(float x, float z);                // 0x42b910
+    bool barrierHit(float x1, float z1, float x2, float z2, float y);   // 0x42d700
+    bool slideAlong(float dist, bool back);         // the slide part of 0x42a890 / 0x42ace0
+    void moveForward(float dist);                   // 0x42a890
+    void moveBack(float dist);                      // 0x42ace0
+    void raise(float d);                            // 0x42b130
+    void lower(float d);                            // 0x42b2d0
+    void turn(float deg);                           // 0x42a790
+    double wallRange();                             // 0x4272e0
     // 0x4aa570 (Raytrace_Scene's, on its RayTrace): data\<name>.rts, the sprites loaded from `pack`
     bool loadSprites(const char *name, Vision::Ras *pack);
     void subdivide(unsigned lo, unsigned hi, Seg *startA, Seg *startB, Seg *endA, Seg *endB);
@@ -193,8 +216,14 @@ public:
     std::vector<Sprite3D *> sprites;                // +0x1138
     std::vector<Order> sorder;                      // +0x1148: sprites by distance, far first
     std::vector<Box *> boxes;                       // +0xa8 (a linked list in the exe, in this order)
+    Seg *boundary = nullptr;                        // +0x55c: the walls moved 150 inwards (circular)
+    std::vector<Seg *> bsegs;                       // port: owns the boundary's segments
+    bool no_walls = false;                          // +0x530: no textured wall: no collision
+    double slide = 0;                               // +0x560: the angle of the wall that stopped the last step
+    uint32_t move_start = 0, move_last = 0;         // +0x8c +0x88: walking since / last step
+    std::vector<Barrier *> barriers;                // +0x1158
 private:
-    void fallback(Seg *start, Seg *end, float *x, float *z);   // 0x4279a0 (port: TODO)
+    void fallback(Seg *start, Seg *end, float *x, float *z);   // 0x4279a0
 };
 
 // part of 0x428580: the wall object for a textured wall (walls.cpp)
