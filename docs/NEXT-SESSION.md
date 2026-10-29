@@ -1,6 +1,14 @@
 # Next session
 
-## Latest (Oct 28 night, the Lost Boys' tutorial, ~55%)
+## Latest (Oct 28, 23:30, the map tutorial, ~57%)
+- game/src/scenes/map.*: Map_Scene_Base (0x4a5b90: the map screen, 12 buttons (Button@MapScene), the five
+  areas' token displays, the treasure map mode, the credits roll (Credits), the music) and MapTutorial_Scene
+  (0x4a9340, "map_tutorial"): the cursor tours the areas and the buttons while Peter explains, then
+  change_scene("lost") (not ported: the game stops there). State: the areas' game records (zero; what fills
+  them comes with the areas) and the save's treasure map / X spot queries.
+- Next: "lost" (Lost_Scene 0x43e5b0, the hideout proper: the three mini games' doors), then its mini games.
+
+## Earlier (Oct 28 night, the Lost Boys' tutorial, ~55%)
 - game/src/scenes/lost.*: Lost_Scene_Base (0x443b40: area 3, max eye 291, the three game signs with the
   caps/stars from the save, the three tunes) and LostTutorial_Scene (0x444440, "lost_tutorial"): the six Lost
   Boys and Peter (TutorialCharacter, tutorial_char.*: idles, talking with mouth attachment and the raccoon

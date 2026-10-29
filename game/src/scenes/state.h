@@ -26,6 +26,11 @@ public:
     bool getDust(int *out) { return getInt("Dust Amount", out); }   // 0x4ea760
     void setDust(int v) { setInt("Dust Amount", v); }                // 0x4ea7b0
     int gameInfo(const char *game);                  // 0x4e9d70: the game's section, "Info" (0 when missing)
+    // "<area> Treasure Map" / "Map Segment" present: 0x4ea870 Village, 0x4ea9f0 Starry, 0x4ea970 Lost,
+    // 0x4ea8f0 Skull, 0x4ea7f0 Mermaid
+    bool mapSegment(const char *area);
+    bool anyMapSegment();                            // 0x4eabb0: Mermaid, Village, Skull, Lost, Starry
+    bool hasXSpot(bool *out) { return flag(cur, "Has X Spot", out); }   // 0x4ea690
 private:
     static bool flag(Vision::Database *db, const char *key, bool *out);
     Vision::Database *cur = nullptr, *globals = nullptr;
@@ -49,6 +54,10 @@ struct State {
     void areaSpot(int area, float out[4]) const { cameraSpot(area, cur_spot[area], out); }   // 0x4ec0a0
     void setAreaSpot(int area, int spot) { cur_spot[area] = spot; }                          // 0x4ec120
     std::string last_scene = "lost";                 // +0x1830: the last 3D scene (not "treasure")
+    // the areas' game records (the first int of each; 5 games per area): Indian village +0x15a0 (0x1c apart),
+    // Starry skies +0x162c, Skull rock +0x16a4, Lost Boys +0x172c, Mermaid cove +0x17a4 (0x18 apart).
+    // port: what fills them (the areas and the save) is not ported yet; 0 for a new player.
+    int games_indv[5] = {}, games_star[5] = {}, games_skrl[5] = {}, games_lost[5] = {}, games_mcov[5] = {};
     bool hover_up = false, hover_down = false;       // +0x75 +0x76: the 3D eye rises to 200 / stays
     bool enter_released = true;                      // +0x77
     Saves saves;                                     // +0x3cc

@@ -134,6 +134,17 @@ bool Saves::hasTreasure(bool *out) { return flag(cur, "Has Treasure", out); }   
 
 bool Saves::hasCap() { return false; }
 
+bool Saves::mapSegment(const char *area) {           // 0x4ea870 & co: *0x543538 "Map Segment"
+    return cur->get(std::string(area) + " Treasure Map", "Map Segment") != nullptr;
+}
+
+bool Saves::anyMapSegment() {                        // 0x4eabb0
+    static const char *const areas[5] = {"Mermaid", "Village", "Skull", "Lost", "Starry"};
+    for (const char *a : areas)
+        if (mapSegment(a)) return true;
+    return false;
+}
+
 int Saves::gameInfo(const char *game) {                  // 0x4e9d70
     const std::string *v = cur->get(game, "Info");      // *0x5434e4
     return v ? atoi(v->c_str()) : 0;
