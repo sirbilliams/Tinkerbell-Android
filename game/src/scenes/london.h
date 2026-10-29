@@ -8,6 +8,7 @@
 #include "raytrace_scene.h"
 #include "london_chars.h"
 #include "acts.h"
+#include "gemsign.h"
 #include "../raytrace/mover.h"
 #include "../vision/animation.h"
 #include "../vision/sound.h"
@@ -15,25 +16,6 @@
 namespace Game {
 
 class London_Scene;
-
-// The sign board with the player's tokens (0x30 bytes at +0x3508; 0x4e6400 ctor, 0x4e6440 init, 0x4e6530 release,
-// 0x4e6570 show, 0x4e6590 hide, 0x4e65b0 mouse): the "AA_lond_gs_sign_01" sprite of the street and four attachments
-// on it: the tick, the green highlight, the cap and the star.
-struct GemSign {
-    GemSign(const char *sign, const char *tick, const char *green, const char *cap, const char *star);   // 0x4e6400
-    void init(Raytrace::RayTrace *rt);               // 0x4e6440
-    void release();                                  // 0x4e6530
-    void show();                                     // 0x4e6570: its animation shown, its box back
-    void hide();                                     // 0x4e6590
-    bool mouse();                                    // 0x4e65b0: the highlight under the mouse; a click plays the click
-    const char *names[5];                            // +0x00..+0x10
-    Raytrace::Sprite3D *sprite = nullptr;            // +0x14
-    Raytrace::Attachment *green = nullptr, *cap = nullptr, *star = nullptr;   // +0x18 +0x1c +0x20
-    Raytrace::RayTrace *rt = nullptr;                // +0x24
-    bool enabled = false;                            // +0x28
-    bool clicked = false;                            // +0x29
-    Vision::Sound *click = nullptr;                  // +0x2c "GLOB_FX_GSclick"
-};
 
 // WallAnimation (vtable 0x517cec, 0x18 bytes, ctor 0x4f1630): an animation drawn over a wall of the street (John
 // and Michael waving in a window).
@@ -148,7 +130,7 @@ public:
     void leave() override;                           // v20 0x4b6230
     void onMouse() override;                         // v25 0x4b50a0
     bool onKey() override;                           // v26 0x4b5260
-    void cursorUpdate() override;                    // v30 0x4b4f70
+    Vision::Graphic *cursorUpdate() override;        // v30 0x4b4f70
     void perFrame();                                 // 0x4b65f0: the "all the arrows" picture after some lines
     void scriptFrame();                              // the body of the run's loops
     void waitBusy(Vision::Task *t);                  // the scripts' "while a line plays, wait 30 ms"

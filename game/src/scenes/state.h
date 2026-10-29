@@ -3,7 +3,7 @@
 #pragma once
 #include "../vision/database.h"
 #include <string>
-namespace Vision { class Graphic; class Ras; }
+namespace Vision { class Graphic; class Ras; class Sound; }
 
 namespace Game {
 
@@ -23,6 +23,9 @@ public:
     void setTutorialsPassed(bool v);                 // 0x4ea570 ("true" / "")
     bool hasTreasure(bool *out);                     // 0x4eae10 ("Has Treasure")
     bool hasCap();                                   // 0x4e9af0 (port: TODO, reads every area's progress)
+    bool getDust(int *out) { return getInt("Dust Amount", out); }   // 0x4ea760
+    void setDust(int v) { setInt("Dust Amount", v); }                // 0x4ea7b0
+    int gameInfo(const char *game);                  // 0x4e9d70: the game's section, "Info" (0 when missing)
 private:
     static bool flag(Vision::Database *db, const char *key, bool *out);
     Vision::Database *cur = nullptr, *globals = nullptr;
@@ -36,7 +39,16 @@ struct State {
     Vision::Graphic *cursor = nullptr;               // +0x5c ("glob_cu_normal_"): the game's own cursor (port: created with the state object
                                                      // 0x4ec6e0, not ported yet; null = none)
     bool paused3d = false;                           // +0x64: the 3D scenes' frame work stops (Global3DTask)
-    int skill = 0;                                   // +0x68
+    int skill = 1;                                   // +0x68 (0x4ec920: 1)
+    Vision::Sound *throwdust = nullptr;              // +0x7c "GLOB_FX_throwdust"
+    bool dusting = false;                            // +0x3c4: the pixie dust is on the cursor
+    int dust = 0;                                    // +0x3c8: the pixie dust in the bag (0..50)
+    int last_game = 0, last_result = 0;             // +0x79c +0x7a0: the last mini game played and how it ended
+    bool tutorial_skipped = false;                   // +0x7bc: Escape in the Lost Boys' tutorial
+    int cur_spot[6] = {};                            // +0x1580 (+0x13a0 + 0x1e0): each area's camera spot
+    void areaSpot(int area, float out[4]) const { cameraSpot(area, cur_spot[area], out); }   // 0x4ec0a0
+    void setAreaSpot(int area, int spot) { cur_spot[area] = spot; }                          // 0x4ec120
+    std::string last_scene = "lost";                 // +0x1830: the last 3D scene (not "treasure")
     bool hover_up = false, hover_down = false;       // +0x75 +0x76: the 3D eye rises to 200 / stays
     bool enter_released = true;                      // +0x77
     Saves saves;                                     // +0x3cc

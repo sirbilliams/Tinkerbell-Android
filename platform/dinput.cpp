@@ -262,10 +262,11 @@ bool tb_input_event(const SDL_Event &e) {
 
 // Desktop test aid (not in the game): TB_FAKE_INPUT="<frame>:click <x>,<y>;<frame>:move <x>,<y>;<frame>:key <vk>"
 // replays mouse clicks / moves (game pixels) and key presses at the given frame numbers (calls of tb_input_update).
+static int g_input_frame = 0;
+int tb_input_frame() { return g_input_frame; }      // test aid: the frame number TB_FAKE_INPUT counts
 static void fakeInput() {
     static const char *spec = getenv("TB_FAKE_INPUT");
-    static int frame = 0;
-    frame++;
+    int frame = ++g_input_frame;
     if (!spec || !*spec) return;
     for (const char *p = spec; p && *p; ) {
         int f = 0, a = 0, b = 0, n = 0;

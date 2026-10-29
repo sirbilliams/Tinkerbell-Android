@@ -52,7 +52,7 @@ public:
 // 0x4e32b0: a Graphic that owns an Animation and steps it by its own delay.
 class AnimationPlayer : public Graphic {
 public:
-    AnimationPlayer();                               // 0x4e32b0
+    explicit AnimationPlayer(const char *prefix = "", uint32_t delay = 0);   // 0x4e32b0
     ~AnimationPlayer() override;                     // 0x4e3370
     void load() override;                            // 0x4e33f0 v15: stops, loads the animation
     void unload() override;                          // 0x4e3410 v16

@@ -303,18 +303,34 @@ void Global3DTask::run() {                           // 0x4abfd0
         if (!Game::state().paused3d) {
             scene->spriteFrames();                   // v22
             scene->cursorUpdate();                   // v30
-            // port: 0x4bf070 (the +0x2740 object, 0x4befe0) is not ported yet
+            scene->lift->update();                   // 0x4bf070
             if (scene->tink) scene->tink->update();  // 0x4daf30
             scene->hover();                          // v32
-            // port: 0x4f08f0 (the toolbar) is not ported yet
+            scene->bag->regen(0);                    // 0x4f08f0 (port: its unused stack argument as 0)
         }
-        wait(0);
+        wait(30);
     }
 }
+
+TinkerbellRaytraceScene::TinkerbellRaytraceScene(const char *nm)   // 0x4aadb0
+    : Raytrace_Scene(nm), pixie("GLOB_CU_pixiedust_", 50) {}
 
 TinkerbellRaytraceScene::~TinkerbellRaytraceScene() {
     delete global_task;
     delete tink;
+    delete bag;
+    delete lift;
+}
+
+// v30 0x4ab6b0: the hand cursor over the map icon, the bag or the bell (when shown); the dust cursor while dusting.
+Vision::Graphic *TinkerbellRaytraceScene::cursorUpdate() {
+    Vision::Graphic *hand = Game::state().cursor_active;   // +0x60
+    Vision::Graphic *c = nullptr;
+    if (map.visible && map.hit(g_mouse.x, g_mouse.y)) c = hand;
+    if (Game::state().dusting) c = &pixie;
+    else if (bag->visible && bag->hit(g_mouse.x, g_mouse.y)) c = hand;
+    if (bell.visible && bell.hit(g_mouse.x, g_mouse.y)) return hand;
+    return c;
 }
 
 // v27 0x4ab0f0 (part): the 3D scene, then the global_3d and tinkerbell3D packs, Tink and the frame task.
@@ -325,11 +341,21 @@ void TinkerbellRaytraceScene::open(const char *nm) {
     global3d = ras_open("global_3d", "", &data_device());   // +0x17d4
     global3d->load();
     ras_set_current(global3d);
-    // port: the pixie-dust cursor (+0x17d8), the Neverland map icon (+0x19a0), the pixie dust bag (+0x1998) and
-    // the help bell (+0x1fe8) are not ported yet (London hides them); nor 0x4befe0 (+0x2740)
+    pixie.load();                                    // +0x17d8 v15
+    pixie.visible = false;                           // +0x1854
+    pixie.start(true);                               // 0x4e34c0(1)
+    map.load();                                      // +0x19a0 v15
+    over1.layer(0)->add(&map);
+    bag = new PixieDustBag();                        // 0x4efd50 (+0x1998)
+    over1.layer(0)->add(bag);
+    bell.load();                                     // +0x1fe8 v15
+    over1.layer(0)->add(&bell);
+    // +0x16b4 = 0 (gravity) and +0x12b0 = 975: the exe's order
+    gravity = 0;                                     // +0x16b4
     rt.pick_max = 975.0f;                            // +0x12b0 = 0x516378
     over1.layer(0)->add(&Game::cannon());            // state +0x7c0
     Game::cannon().hide();                           // 0x4e3bf0
+    lift = new DustLift(&rt);                        // 0x4befe0 (+0x2740)
     // port: the joystick service (+0x12c0) is the pad, read as keys (platform/dinput)
     g_mouse.x = 0;                                   // 0x5a6e60 / 0x5a6e7c
     g_mouse.y = 0;
@@ -352,7 +378,36 @@ void TinkerbellRaytraceScene::open(const char *nm) {
     cloud2->anim->visible = false;
     cloud2->scale = 100.0f;
     show_cursor();                                   // 0x4119d0
-    // port: +0x2831 = 0 and the "treasure" scene's extra (0x4ab3f7..) belong to scenes not ported yet
+    // port: +0x2831 = 0 (a flag of scenes not ported yet)
+    if (strcasecmp(name(), "treasure") != 0) Game::state().last_scene = name();   // 0x423c60, state +0x1830
+}
+
+// 0x4ab760: the camera put up at 475 above the cloud bank (150 ahead at height 1500) and brought down to the ground
+// in 2 s, the hover held and the input off; true while flying.
+bool TinkerbellRaytraceScene::arriveThroughClouds(bool second) {
+    if (!flying) {
+        float X = rt.camx, Z = rt.camz, A = (float)rt.angleDeg();   // 0x42b470, 0x42b540, 0x42b560
+        double ang = (double)3.14159274f * A * 0.00555555569f;     // 0x516374, 0x513d90
+        float px = (float)(cos(ang) * 150.0 + X);    // 0x516440
+        float pz = (float)(sin(ang) * 150.0 + Z);
+        cloud1->setPos(px, 1500.0f, pz);             // 0x42f740
+        cloud2->setPos(px, 1500.0f, pz);
+        if (second) cloud2->anim->visible = true;
+        else cloud1->anim->visible = true;
+        rt.setCamera(X, 475.0f, Z, A);               // 0x42a570
+        tween.start(&rt, X, 0.1f, Z, A, 2000.0);     // 0x4df3d0
+        Game::state().hover_down = true;             // +0x76
+        paused = true;                               // +0x128
+        flying = true;
+        return true;
+    }
+    if (tween.step()) return flying;                 // 0x4df4d0
+    cloud1->anim->visible = false;
+    cloud2->anim->visible = false;
+    Game::state().hover_down = false;
+    paused = false;
+    flying = false;
+    return false;
 }
 
 // 0x4ab920: the cloud bank 150 ahead at height 1500, the camera rising to 475 in 2 s, the hover held, input off.
@@ -417,11 +472,19 @@ void TinkerbellRaytraceScene::leave() {              // v20 0x4ab470 (part)
     Game::cannon().detach();                         // 0x412200
     dim.detach();
     if (global_task) { global_task->deactivate(); delete global_task; global_task = nullptr; }
+    pixie.detach();                                  // 0x412200
+    pixie.unload();                                  // v16
+    delete bag;                                      // v3(1) (its dtor takes it off the screen)
+    bag = nullptr;
+    map.unload();                                    // v16 (it stays in over1; the next open adds it again)
+    bell.unload();
     if (tink) { tink->release(); delete tink; tink = nullptr; }
     if (tinkpack) ras_close(tinkpack);
     tinkpack = nullptr;
     if (global3d) ras_close(global3d);
     global3d = nullptr;
+    delete lift;                                     // 0x4bf030 + free
+    lift = nullptr;
     Raytrace_Scene::leave();
 }
 

@@ -230,8 +230,8 @@ AnimationHelper::AnimationHelper(const char *p, int m) : Animation(p) {   // 0x4
 }
 
 // ---------------------------------------------------------------- AnimationPlayer
-AnimationPlayer::AnimationPlayer()           // 0x4e32b0
-    : Graphic(0, 0, 0, 0, 0, 0, true, 0xff000000u, 0, 0, 0, -1, 0xffff00ffu), anim("") {}
+AnimationPlayer::AnimationPlayer(const char *prefix, uint32_t d)   // 0x4e32b0
+    : Graphic(0, 0, 0, 0, 0, 0, true, 0xff000000u, 0, 0, 0, -1, 0xffff00ffu), delay(d), anim(prefix) {}
 AnimationPlayer::~AnimationPlayer() {}       // 0x4e3370
 void AnimationPlayer::load() { playing_ = false; anim.load(); }        // 0x4e33f0
 void AnimationPlayer::unload() { Graphic::unload(); anim.unload(); }   // 0x4e3410

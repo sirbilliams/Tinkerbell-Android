@@ -53,6 +53,7 @@ public:
     void start() override;                           // +0x30 0x4c59c0
     void stop() override;                            // +0x34 0x4c59f0
     void run() override;                             // 0x4c5a60
+    void cancel();                                   // 0x4c5be0: its line stopped if playing; not again this visit
     Graphic *owner = nullptr;                        // +0xc0
     std::string line;                                // +0xc4
     Mouse mouse;                                     // +0xd0

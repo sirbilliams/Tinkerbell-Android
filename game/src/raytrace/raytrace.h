@@ -173,6 +173,11 @@ public:
     void drawGround();                              // 0x42c460: the ground, reused while the camera stands still
     uint32_t idleTime();                            // 0x42bc30: ms the camera has stood still (after 60), else 0
     void makeBox(Sprite3D *s, bool flag);           // 0x429580 -> 0x429380
+    void refreshBox(const char *name, Sprite3D *s); // 0x4294b0: the box `name` moved with the sprite
+    bool cameraInBox(Sprite3D *s);                  // 0x429710: the sprite's box (refreshed) holds the camera
+    static void setMaxEye(int v);                   // 0x42b110 (0x535a28: how high the camera may rise)
+    static void resetMaxEye();                      // 0x42b120: 450
+    static int maxEye();
     void drawSprite(int i);                         // 0x42e120
     // movement and collision (collision.cpp)
     void offsetSeg(Seg *src, Seg *out, int dist, double ang);   // 0x427760

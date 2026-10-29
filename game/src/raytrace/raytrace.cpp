@@ -492,7 +492,8 @@ void RayTrace::draw() {
     if (frame_dt == 0) frame_dt = 1;
     last_time = now;
     horizon = h / 2;
-    // port: the sprite box refresh (+0xa0 sprites, 0x4294b0) is not in yet; London's sprites don't set it
+    for (Sprite3D *s : sprites)                                        // the boxes of the sprites flagged
+        if (s->box_flag) refreshBox((s->name + "_box").c_str(), s);    // +0xa0 follow them (0x4294b0)
     if (moved) {
         maxdist = 1.0;                                                 // +0x550
         moved = false;

@@ -3,6 +3,7 @@
 #include "../vision/animation.h"
 #include "voiceover.h"
 #include "cannon.h"
+#include "../vision/sound.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -68,11 +69,13 @@ void State::initGlobals() {
 // The end of the state's constructor 0x4ec6e0 (after 0x4ec920): the global pack current, the cursors loaded
 // (the active one started, looping), the cannon and the voice-over loaded (its screen and keys active).
 void State::finishInit() {
+    skip_key = Vision::g_developer ? 0x51 : 0x1b;                               // +0x74 ('Q' in developer mode)
     Vision::ras_set_current(global_ras);                                       // 0x41a920
     cursor->load();                                                              // v15
     cursor_active->load();
     static_cast<Vision::Animation *>(cursor_active)->start_time = Vision::frame_time() + 1;   // 0x403be0(1, 1)
     static_cast<Vision::Animation *>(cursor_active)->mode = 1;
+    if (!throwdust) throwdust = new Vision::Sound("GLOB_FX_throwdust");         // +0x7c (built by the ctor)
     Game::cannon().load();                                                       // +0x7c0 v15
     Vision::VoiceOver::get().load();                                             // +0x3e8 v15 (0x4c97f0)
 }
@@ -129,6 +132,11 @@ void Saves::setTutorialsPassed(bool v) {                 // 0x4ea570
 
 bool Saves::hasTreasure(bool *out) { return flag(cur, "Has Treasure", out); }   // 0x4eae10
 
-bool Saves::hasCap() { return false; }                   // 0x4e9af0 (port: TODO with the area progress)
+bool Saves::hasCap() { return false; }
+
+int Saves::gameInfo(const char *game) {                  // 0x4e9d70
+    const std::string *v = cur->get(game, "Info");      // *0x5434e4
+    return v ? atoi(v->c_str()) : 0;
+}                   // 0x4e9af0 (port: TODO with the area progress)
 
 }  // namespace Game

@@ -164,6 +164,40 @@ void RayTrace::makeBox(Sprite3D *s, bool flag) {
     s->box_flag = flag;
 }
 
+// 0x4294b0: the box `name` follows the sprite again (the same sums as 0x429380, the half height and the sprite's
+// centre rounded to floats first).
+void RayTrace::refreshBox(const char *nm, Sprite3D *s) {
+    Box *b = nullptr;
+    for (Box *c : boxes)
+        if (strcasecmp(c->name.c_str(), nm) == 0) { b = c; break; }   // 0x423840 (any case)
+    if (!b) return;
+    float hh = (float)((double)s->bheight * 1.35f * 0.5f);   // 0x513d50, 0x513298
+    float yc = (float)((double)s->scale * s->y * 0.01f);     // 0x513d4c
+    double lo = ((double)yc - hh - 480.0f) * 0.487804890f;   // 0x513d48, 0x513d44
+    double hi = ((double)yc + hh - 480.0f) * 0.487804890f;
+    float r = s->radius;
+    b->minx = (float)((double)s->x - r);
+    b->minz = (float)((double)s->z - r);
+    b->maxx = (float)((double)r + s->x);
+    b->maxz = (float)((double)r + s->z);
+    b->y1 = (float)hi;
+    b->y0 = (float)lo;
+}
+
+// 0x429710: the sprite's box brought up to date; is the camera inside it?
+bool RayTrace::cameraInBox(Sprite3D *s) {
+    std::string nm = s->name + "_box";               // "_box" (0x535a2c)
+    refreshBox(nm.c_str(), s);
+    float cy = (float)((double)eyef - 117.073174f);  // 0x513d54
+    float cz = camz, cx = camx;
+    for (Box *b : boxes) {
+        if (strcasecmp(b->name.c_str(), nm.c_str()) != 0) continue;   // 0x423840
+        if (!(cx < b->minx) && cx <= b->maxx && !(cz < b->minz) && cz <= b->maxz && !(cy < b->y0) && cy <= b->y1)
+            return true;
+    }
+    return false;
+}
+
 static bool rd32(FILE *f, void *p) { return fread(p, 4, 1, f) == 1; }
 
 // 0x4aa570: header 0x58, u32 count, per sprite: name[40], animation[40] (trailing digits dropped), then

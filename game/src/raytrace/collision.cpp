@@ -386,12 +386,18 @@ void RayTrace::moveBack(float dist) {
     slideAlong(dist, true);
 }
 
+// 0x535a28: the highest eye, a global the scenes change (Lost: 291); read from the exe until one does.
+static int g_max_eye = -1;
+int RayTrace::maxEye() { if (g_max_eye < 0) g_max_eye = tb_exe_i32(0x535a28); return g_max_eye; }
+void RayTrace::setMaxEye(int v) { g_max_eye = v; }          // 0x42b110
+void RayTrace::resetMaxEye() { g_max_eye = 0x1c2; }         // 0x42b120
+
 // 0x42b130 / 0x42b2d0: the eye up / down by `d`, kept in 0..max (0x535a28) and out of boxes (undone if it would
 // enter one).
 void RayTrace::raise(float d) {
     eyef = (float)((double)d + eyef);
     if (eyef < 0.0f) eyef = 0.0f;
-    float mx = (float)tb_exe_i32(0x535a28);
+    float mx = (float)maxEye();
     if (eyef > mx) eyef = mx;
     nudge(eyef);
     if (boxAt(camx, camz)) eyef = (float)((double)eyef - d);
@@ -401,7 +407,7 @@ void RayTrace::raise(float d) {
 void RayTrace::lower(float d) {
     eyef = (float)((double)eyef - d);
     if (eyef < 0.0f) eyef = 0.0f;
-    float mx = (float)tb_exe_i32(0x535a28);
+    float mx = (float)maxEye();
     if (eyef > mx) eyef = mx;
     nudge(eyef);
     if (boxAt(camx, camz)) eyef = (float)((double)d + eyef);

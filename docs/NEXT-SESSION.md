@@ -1,5 +1,26 @@
 # Next session
 
+## Latest (Oct 28 night, the Lost Boys' tutorial, ~55%)
+- game/src/scenes/lost.*: Lost_Scene_Base (0x443b40: area 3, max eye 291, the three game signs with the
+  caps/stars from the save, the three tunes) and LostTutorial_Scene (0x444440, "lost_tutorial"): the six Lost
+  Boys and Peter (TutorialCharacter, tutorial_char.*: idles, talking with mouth attachment and the raccoon
+  twins' shared lines, waves, the flying idle with dust), the descent through the clouds (0x4ab760), the bag,
+  the dust on a Lost Boy, the butterfly (fill the bag), the bell (Tink's help, she points), the map, then
+  change_scene("map_tutorial") (not ported: the game stops there). Q (developer) / Escape skips to "lost".
+- TinkerbellRaytraceScene now has its corner buttons (toolbar.*: HelpBellIcon, NeverlandMapIcon, PixieDustBag
+  with the dust amount in the save, regen every 15-19 s), the dust cursor (AnimationPlayer "GLOB_CU_pixiedust_"),
+  the dust lift (dustlift.*, 0x4befe0: up 3 s / hold 5 s / down 3 s, stepped by the 200 ms cap every frame since
+  the exe never sets its clock: a quick hop), the base cursor choice (v30 0x4ab6b0), gravity 0 after open (the
+  exe's +0x16b4 = 0; London had kept 100), Global3DTask waits 30 ms like the exe.
+- RayTrace: refreshBox 0x4294b0 (and the per-frame refresh of flagged sprites' boxes), cameraInBox 0x429710,
+  the max eye as a settable global (0x42b110 / 0x42b120). Tink: TinkCmdPoint (0x4db7b0 / 0x4dcef0).
+- GemSign moved to gemsign.*; state: dust (+0x3c8), dusting (+0x3c4), throwdust sound, area spots, last scene.
+- Test aids: TB_DEBUG_LOST=1 logs the stages with the input frame; TB_LOST_AUTO=1 catches the butterfly after
+  3 s. A full run: `tinkerbell lost_tutorial` with TB_LOST_AUTO=1 TB_FAKE_INPUT="3300:click 100,449;4200:click
+  280,330;7000:click 45,440;8800:click 590,450" (bag, Cubby, bell, map).
+- Not ported yet: 0x42c950 (the attachment under the dust; nothing uses it so far).
+- Next: "map_tutorial" (MapTutorial_Scene@MapScene) and the map, then "lost" (Lost_Scene, 0x43e5b0).
+
 ## Latest (Oct 28, London playable, ~50%)
 - game/src/scenes/london.*: London_Scene enter/run/leave, mouse (v25) / keys (v26) / cursor (v30), the per-frame
   arrow picture, GemSign (the sign board), WallAnimation (John/Michael waving), RibbonInterface, LondonCursor,

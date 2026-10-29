@@ -1,6 +1,7 @@
 // My_Stage, the two movie scenes ("Bumper", "Intro") and the sign-in room (first pass), reconstructed.
 #include "signin.h"
 #include "london.h"
+#include "lost.h"
 #include "state.h"
 #include "game.h"
 #include "../vision/engine.h"
@@ -109,6 +110,7 @@ void tb_game_register() {
     static QTMovieKind qt;
     static MovieScene bumper("Bumper", "DIbumper", "Intro");          // 0x48aee0
     static MovieScene intro("Intro", "LOND_MO_intro", "signin");     // 0x48b150
+    static Game::LostTutorial_Scene lost_tutorial;                   // 0x443e70 -> 0x444440 (scenes/lost.cpp)
     static Game::SignIn_Scene signin;                                 // 0x4afc40 (scenes/signin.cpp)
     static Game::London_Scene london;                                 // 0x4b6440 (scenes/london.cpp)
     g_vo_suppressed = vo_suppressed_flag;                             // *(0x63171c + 0x560)

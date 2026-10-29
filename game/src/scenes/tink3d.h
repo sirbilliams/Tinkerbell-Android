@@ -49,6 +49,18 @@ struct TinkCmdAnimation : TinkCommand {
     Vision::Sound *snd = nullptr;                    // +0x10
 };
 
+// Tinkerbell3DCommandPoint (0x5175f4, made by 0x4db7b0): turn to the camera, then point at (x, y, z) (up, down,
+// east or west) to the animation's end.
+struct TinkCmdPoint : TinkCommand {
+    TinkCmdPoint(float x, float y, float z);         // 0x4db7b0 (part)
+    ~TinkCmdPoint() override;                        // 0x4dce60
+    bool update(uint32_t dt, Tinkerbell3D *t) override;   // 0x4dcef0
+    void pointAnim(Tinkerbell3D *t);                 // 0x4dd1d0
+    float x, y, z;                                   // +0x08 +0x0c +0x10
+    bool started = false;                            // +0x14
+    Vision::Sound *fly = nullptr;                    // +0x18 "GLOB_FX_TNKfly1"
+};
+
 class Tinkerbell3D : public Raytrace::RayTraceCharacter {
 public:
     Tinkerbell3D(Raytrace::RayTrace *rt, Raytrace_Scene *scene);   // 0x4da4a0
@@ -58,6 +70,7 @@ public:
     void update();                                   // 0x4daf30: every frame (from Global3DTask)
     void push(TinkCommand *c) { queue.push_back(c); }   // 0x4de400 / 0x4de160
     int pushBasic(int type, float x, float y, float z);   // 0x4de020
+    void point(float x, float y, float z);           // 0x4db7b0: a TinkCmdPoint queued
     double facing();                                 // 0x4db110: the heading to the camera (degrees)
     bool turnToward(float deg);                      // 0x4dc3d0: up to 15 degrees; true when within 10
     bool idle() const { return queue.empty(); }      // 0x4de010 (on +0x50): no command left

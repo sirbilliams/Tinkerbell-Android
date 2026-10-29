@@ -22,59 +22,6 @@ static bool within(const float a[3], const float b[3], float r) {
     return !((double)r * r < dz * dz + dy * dy + dx * dx);
 }
 
-// ---------------------------------------------------------------- GemSign
-GemSign::GemSign(const char *s, const char *t, const char *g, const char *c, const char *st)   // 0x4e6400
-    : names{s, t, g, c, st} {}
-
-void GemSign::init(Raytrace::RayTrace *r) {          // 0x4e6440
-    rt = r;
-    sprite = rt->findSprite(names[0]);
-    if (!sprite) return;                             // port: the exe would crash without the sign
-    sprite->attach(names[1], names[1], 100);         // the tick (kept by the sprite only)
-    green = sprite->attach(names[2], names[2], 100);
-    cap = sprite->attach(names[3], names[3], 90);
-    star = sprite->attach(names[4], names[4], 95);
-    if (green) green->on = false;
-    if (cap) cap->on = false;
-    if (star) star->on = false;
-    click = new Sound("GLOB_FX_GSclick");            // 0x420210
-    click->type = 7;                                 // +0x340
-    click->open();
-}
-
-void GemSign::release() {                            // 0x4e6530
-    sprite = nullptr;
-    green = cap = star = nullptr;
-    rt = nullptr;
-    if (click) { click->close(); delete click; }     // 0x41fc50
-    click = nullptr;
-}
-
-void GemSign::show() {                               // 0x4e6570
-    if (!sprite) return;
-    if (sprite->anim) sprite->anim->visible = true;
-    rt->makeBox(sprite, false);                      // 0x429580
-}
-
-void GemSign::hide() {                               // 0x4e6590
-    if (!sprite) return;
-    rt->removeBox(sprite);
-    if (sprite->anim) sprite->anim->visible = false;
-}
-
-bool GemSign::mouse() {                              // 0x4e65b0
-    if (!green) return false;
-    green->on = false;
-    clicked = false;
-    if (!enabled) return green->on;
-    if (rt->pick(g_mouse.x, g_mouse.y) != sprite) return green->on;
-    green->on = true;
-    if (!mouse_down()) return green->on;
-    clicked = true;
-    if (click) click->play();
-    return green->on;
-}
-
 // ---------------------------------------------------------------- WallAnimation
 void WallAnimation::init() {                         // 0x4f1690
     Raytrace::WallObject *w = rt->findWall(wall);    // 0x42d6a0
@@ -214,7 +161,9 @@ void London_Scene::enter() {
     use_normal = use_ribbon = false;
     hide_cursor();                                   // 0x4119e0
     // port: +0x3698 = &state +0x7c0 (the cannon, Game::cannon())
-    // port: +0x1998 / +0x1a1c / +0x2064 visible = 0 (the bag, map icon and bell: not ported yet)
+    bag->visible = false;                            // +0x1998 +0x7c
+    map.visible = false;                             // +0x1a1c
+    bell.visible = false;                            // +0x2064
     john = new WallAnimation(&rt, "wall_LOND_WP_ctyscap08_01_41", "LOND_CA_JONwave_", 0x14);   // 0x4f1630
     john->init();
     michael = new WallAnimation(&rt, "wall_LOND_WP_ctyscap08_01_41", "LOND_CA_MICwave_", 0x1e);
@@ -347,8 +296,8 @@ void London_Scene::perFrame() {
 
 // v30 0x4b4f70: which cursor shows: the active one over Wendy (when she wants a click), Peter (likewise), the
 // sign, the ribbon or the ribbon in the bar.
-void London_Scene::cursorUpdate() {
-    if (!cur_normal || !cur_ribbon) return;
+Vision::Graphic *London_Scene::cursorUpdate() {     // returns 0 on every path
+    if (!cur_normal || !cur_ribbon) return nullptr;
     Sprite3D *s = rt.pick(g_mouse.x, g_mouse.y);
     cur_normal->active = false;
     cur_ribbon->active = false;
@@ -360,9 +309,10 @@ void London_Scene::cursorUpdate() {
                (s && s == ribbon.sprite && ribbon.active) ||
                (iface && iface->enabled && iface->holding && iface->select.hit(g_mouse.x, g_mouse.y));
     if (act) cur_normal->active = true;
-    if (use_normal) { set_cursor(cur_normal, true); return; }
-    if (use_ribbon) { set_cursor(cur_ribbon, true); return; }
+    if (use_normal) { set_cursor(cur_normal, true); return nullptr; }
+    if (use_ribbon) { set_cursor(cur_ribbon, true); return nullptr; }
     hide_cursor();
+    return nullptr;
 }
 
 // v25 0x4b50a0: the clicks of the ribbon game, then the running script's own.

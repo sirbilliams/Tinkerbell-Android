@@ -133,6 +133,11 @@ void PauseOver::stop() {                             // 0x4c59f0
     if (active()) deactivate();
 }
 
+void PauseOver::cancel() {                           // 0x4c5be0
+    if (vo_isPlaying(line.c_str())) VoiceOver::get().stop();
+    played++;
+}
+
 // 0x4c5a60: every 100 ms. Over the owner with the cursor showing: time it; past `delay` play the line, once per
 // visit. Off the owner (or no cursor): start again. While the prompts are suppressed the timer only runs on while
 // this line is playing.

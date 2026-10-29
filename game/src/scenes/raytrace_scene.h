@@ -8,6 +8,9 @@
 #include "../raytrace/raytrace.h"
 #include "../vision/faderect.h"
 #include "../raytrace/mover.h"
+#include "../vision/animation.h"
+#include "toolbar.h"
+#include "dustlift.h"
 
 namespace Game {
 
@@ -59,7 +62,7 @@ public:
     virtual void open(const char *name);             // v27 0x4a9ca0
     virtual void initPhysics();                      // v28 0x4a96d0
     virtual void physics();                          // v29 0x4a9760
-    virtual void cursorUpdate() {}                   // v30 (0x4aa100 returns the cursor; the scenes override)
+    virtual Vision::Graphic *cursorUpdate() { return &cursor_img; }   // v30 0x4aa100: the cursor for the mouse spot
     virtual bool isFlying();                         // v31 0x4a9a50: eye above 5
     void buildObstacles();                           // 0x4aa880
 
@@ -92,11 +95,11 @@ public:
     class TinkerbellRaytraceScene *scene;            // +0xc0
 };
 
-// TinkerbellRaytraceScene (vtable 0x516380): a Raytrace_Scene with Tink in it.
-// port: so far Tink, the Global3DTask and the hover; the toolbar, help bell, cloud banks and 0x4befe0 come next.
+// TinkerbellRaytraceScene (vtable 0x516380, ctor 0x4aadb0): a Raytrace_Scene with Tink in it, the pixie dust (bag,
+// cursor, lift), the Neverland map icon and the help bell.
 class TinkerbellRaytraceScene : public Raytrace_Scene {
 public:
-    explicit TinkerbellRaytraceScene(const char *name) : Raytrace_Scene(name) {}
+    explicit TinkerbellRaytraceScene(const char *name);   // 0x4aadb0
     ~TinkerbellRaytraceScene() override;
     void open(const char *name) override;            // v27 0x4ab0f0
     void leave() override;                           // v20 0x4ab470
@@ -106,6 +109,10 @@ public:
     void unforce() { forced_off = false; }           // v34 0x4abf70
     void allowUpDown() { force[4] = force[5] = 0; }  // 0x4aa9b0 (Raytrace_Scene's)
     bool flyThroughClouds(bool second);              // 0x4ab920: up through the cloud bank; true while flying
+    bool arriveThroughClouds(bool second);           // 0x4ab760: down through the cloud bank; true while flying
+    Vision::Graphic *cursorUpdate() override;        // v30 0x4ab6b0: the hand over a button, the dust when dusting
+    void resetIdle() { opened = Vision::frame_time(); }        // 0x4a9c90 (+0xdc)
+    uint32_t idleTime() const { return Vision::frame_time() - opened; }   // 0x4a9c70
     bool stateKeys();                                // 0x4ec5f0 (the state's, on this scene): Enter, Shift, Ctrl
     Tinkerbell3D *tink = nullptr;                    // +0x2744
     Global3DTask *global_task = nullptr;             // +0x2758
@@ -117,6 +124,11 @@ public:
     Raytrace::Sprite3D *cloud1 = nullptr, *cloud2 = nullptr;   // +0x2748 +0x274c (the same sprite)
     bool flying = false;                             // +0x2750
     Raytrace::CameraTween tween;                     // +0x16c0
+    Vision::AnimationPlayer pixie;                   // +0x17d8 "GLOB_CU_pixiedust_" (50 ms): the cursor with dust
+    PixieDustBag *bag = nullptr;                     // +0x1998
+    NeverlandMapIcon map;                            // +0x19a0
+    HelpBellIcon bell;                               // +0x1fe8
+    DustLift *lift = nullptr;                        // +0x2740
 };
 
 }  // namespace Game

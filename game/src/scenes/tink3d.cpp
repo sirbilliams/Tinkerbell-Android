@@ -207,7 +207,59 @@ bool TinkCmdAnimation::update(uint32_t, Tinkerbell3D *t) {   // 0x4dc660
     return false;
 }
 
+// ---------------------------------------------------------------- Point
+TinkCmdPoint::TinkCmdPoint(float px, float py, float pz) : x(px), y(py), z(pz) {   // 0x4db7b0 (part)
+    fly = new Vision::Sound("GLOB_FX_TNKfly1");      // 0x420210
+    fly->open();                                     // 0x41f9d0(0)
+}
+TinkCmdPoint::~TinkCmdPoint() { delete fly; }        // 0x4dce60 -> 0x4dce80
+
+bool TinkCmdPoint::update(uint32_t, Tinkerbell3D *t) {   // 0x4dcef0
+    if (!started) {
+        double d = to_camera(t) - t->heading;
+        if (d < -180.0f) d += 360.0f;                // 0x513de4
+        if (!(d <= 180.0f)) d -= 360.0f;             // 0x513da4
+        int ad = abs((int)d);                        // 0x4f3948
+        if ((float)ad > 10.0f) {                     // 0x517548
+            double b = to_camera(t);
+            float bf = (float)b;
+            if (!(b < 360.0f)) bf = (float)(b - 360.0f);
+            if (bf < 0.0f) bf = (float)((double)bf + 360.0f);
+            t->turnToward(bf);                       // 0x4dc3d0
+            return true;
+        }
+        fly->play();                                 // 0x41fd50
+        started = true;
+        pointAnim(t);
+        return true;
+    }
+    Vision::Animation *a = t->sprite()->anim;
+    if (a->current() < a->count() - 1) return true;
+    double h = atan2((double)t->rt->camz - t->z, (double)t->rt->camx - t->x) * kDeg;
+    float hf = (float)h;
+    if (h < 0.0) { h += 360.0f; hf = (float)h; }
+    if (!(h <= 360.0f)) { h -= 360.0f; hf = (float)h; }
+    if (!(hf < 360.0f)) h = (double)hf - 360.0f;
+    if (h < 0.0) h += 360.0f;
+    t->heading = (float)h;
+    return false;
+}
+
+// 0x4dd1d0: straight up or down when the point is above or below her (within 100 across, more than 50 up or
+// down), else east or west by the direction to it.
+void TinkCmdPoint::pointAnim(Tinkerbell3D *t) {
+    float dx = (float)((double)x - t->x), dy = (float)((double)y - t->y), dz = (float)((double)z - t->z);   // 0x425eb0
+    if (sqrt((double)dz * dz + (double)dx * dx) < 100.0 && !(fabs((double)dy) <= 50.0)) {   // 0x5134c0, 0x517660
+        t->setAnim(dy < 0.0f ? "GLOB_CA_TNKptdw_" : "GLOB_CA_TNKptup_", nullptr, 1, 1);
+        return;
+    }
+    double a = atan2((double)dz, (double)dx) * 57.29582595825195f;   // 0x51765c
+    if (a < 270.0f && !(a < 90.0f)) t->setAnim("GLOB_CA_TNKptwe_", nullptr, 1, 1);   // 0x517658, 0x517654
+    else t->setAnim("GLOB_CA_TNKptea_", nullptr, 1, 1);
+}
+
 // ---------------------------------------------------------------- Tinkerbell3D
+void Tinkerbell3D::point(float px, float py, float pz) { queue.push_back(new TinkCmdPoint(px, py, pz)); }   // 0x4db7b0
 Tinkerbell3D::Tinkerbell3D(Raytrace::RayTrace *r, Raytrace_Scene *s)   // 0x4da4a0
     : RayTraceCharacter(r, "tinkerbell3D"), scene(s) {}
 
