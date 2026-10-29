@@ -6,21 +6,13 @@
 // (sprite +0x70) and, at its end, ask for the next state; the talking ones switch mouth and eye attachments.
 #pragma once
 #include "../raytrace/raytrace.h"
+#include "../raytrace/mover.h"
 #include "../vision/animation.h"
 #include "voiceover.h"
 
 namespace Game {
 
-// 0x401000..0x401120 (0x3c bytes): the quadratic through p0 (t = 0), p1 (t = 0.5) and p2 (t = 1).
-struct Curve3 {
-    float p0[3] = {}, p1[3] = {}, p2[3] = {};        // +0x00 +0x0c +0x18
-    float a[3] = {}, b[3] = {};                      // +0x24.. interleaved in the exe: (a, b) per axis
-    void set0(const float v[3]);                     // 0x401040
-    void set1(const float v[3]);                     // 0x401060
-    void set2(const float v[3]);                     // 0x401080
-    void coeffs();                                   // 0x4010a0
-    void at(float t, float out[3]) const;            // 0x401120
-};
+using Raytrace::Curve3;
 
 class LondonChar : public Vision::MagpieCharacter {
 public:

@@ -88,7 +88,39 @@ bool Line::intersect(const Line &o, float *x, float *z) const {
 WallObject::WallObject(const char *n, const char *p) : name(n), prefix(p) {   // 0x42e5d0
     anim = new Vision::Animation(prefix.c_str());   // 0x404c20
 }
-WallObject::~WallObject() { delete anim; }
+WallObject::~WallObject() {
+    delete anim;
+    for (WallObject *l : links) delete l;            // port: the exe's dtor (0x42ec10) is not ported; the links go too
+}
+
+// 0x42e760: a new wall object in the first free link slot, loaded (looping) and on, standing where this one does.
+WallObject *WallObject::addLink(const char *n, const char *p, int k) {
+    int slot = -1;
+    for (int i = 0; i < 10; i++) if (!links[i]) { slot = i; break; }
+    if (slot < 0) return nullptr;                    // port: the exe writes before the array
+    WallObject *o = new WallObject(n, p);
+    links[slot] = o;
+    if (!o->loaded) {
+        o->anim->load();                             // v15
+        o->anim->mode = 1;
+        o->last = Vision::frame_time();
+        o->loaded = true;
+        o->on = true;
+    }
+    o->f2c = true;
+    o->key = k;
+    o->x1 = x1; o->bottom = bottom; o->z1 = z1;
+    o->x2 = x2; o->top = top; o->z2 = z2;
+    return o;
+}
+WallObject *WallObject::findLink(const char *n) {   // 0x42e710
+    for (WallObject *l : links)
+        if (l && strcasecmp(l->name.c_str(), n) == 0) return l;
+    return nullptr;
+}
+void WallObject::linkOn(const char *n, bool v) {    // 0x42e8c0 (on) / 0x42e870 (off)
+    if (WallObject *l = findLink(n)) l->on = v;
+}
 
 // The wall objects for a textured wall (part of the loader 0x428580): "wall_<texture>_<count + 1>", found again by
 // name (0x423840) and loaded once; its corners are the wall's end points truncated to whole units.

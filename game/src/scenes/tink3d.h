@@ -60,13 +60,17 @@ public:
     int pushBasic(int type, float x, float y, float z);   // 0x4de020
     double facing();                                 // 0x4db110: the heading to the camera (degrees)
     bool turnToward(float deg);                      // 0x4dc3d0: up to 15 degrees; true when within 10
+    bool idle() const { return queue.empty(); }      // 0x4de010 (on +0x50): no command left
+    void wave();                                     // 0x4dbd90: a Tinkerbell3DCommandWave ("GLOB_CA_TNKwave_")
+    void say(const char *line);                      // 0x4cca20: plays a voice line (or her sound) as no one
+    void moreDust();                                 // 0x4db1a0: new dust along the way flown
+    bool wanders = true;                             // +0x13c
     float heading = 270.0f;                          // +0x140
     float vx = 0, vy = 0, vz = 0;                    // +0x124 +0x128 +0x12c
     Raytrace_Scene *scene;                           // +0x84 / +0x88
 private:
     void initDust();                                 // 0x4da980
     void dust(uint32_t dt);                          // 0x4db3a0: the dust rises and goes
-    void moreDust();                                 // 0x4db1a0: new dust along the way flown
     void move(uint32_t dt);                          // 0x4db470
     void wander();                                   // 0x4dad40
     void randomIdle();                               // 0x4daa20
@@ -74,7 +78,6 @@ private:
     uint32_t last = 0, last_dust = 0;                // +0x8c +0x90
     Raytrace::Sprite3D *dust_[35] = {};              // +0x98
     float dust_x = 0, dust_y = 0, dust_z = 0;        // +0x130 +0x134 +0x138
-    bool wanders = true;                             // +0x13c
     uint32_t last_idle = 0;                          // +0x1ac
 };
 

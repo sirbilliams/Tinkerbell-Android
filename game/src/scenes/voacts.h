@@ -13,6 +13,9 @@
 
 namespace Vision {
 
+void set_cursor(Graphic *g, bool visible);   // 0x4119b0
+void show_cursor();                          // 0x4119d0
+void hide_cursor();                          // 0x4119e0
 extern Graphic *g_cursor_graphic;       // 0x5a69c4: the mouse cursor (lane A sets it); PreSceneVo hides it
 extern bool (*g_vo_suppressed)();       // *(0x63171c + 0x560) != 0: the repeaters stay quiet (lane A sets it; default: never)
 

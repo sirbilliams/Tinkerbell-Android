@@ -7,13 +7,6 @@
 namespace Game {
 
 // ---------------------------------------------------------------- the cursor globals (0x4119b0 / 0x4119d0 / 0x4119e0)
-static void set_cursor(Graphic *g, bool visible) {   // 0x4119b0
-    g_cursor_graphic = g;
-    if (g) g->visible = visible;
-}
-static void show_cursor() { g_cursor_graphic->visible = true; }                      // 0x4119d0
-static void hide_cursor() { if (g_cursor_graphic) g_cursor_graphic->visible = false; }   // 0x4119e0
-
 // 0x411e70: a graphic's depth; a graphic already in a layer is re-sorted.
 static void set_depth(Graphic *g, int z) {
     g->z = z;
@@ -284,7 +277,7 @@ void SignInWendy::draw() {
     bool restart = false;
     if (!(cur && cur->playing())) {
         if (state == 1) restart = true;
-        else if (state == 2 && Game::state().vo_suppressed && !picked) pickTalk();
+        else if (state == 2 && Game::state().vo_busy() && !picked) pickTalk();
     }
     if (restart) {
         cur = root;

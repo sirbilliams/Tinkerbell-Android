@@ -18,6 +18,7 @@ class FadeRectangle : public Graphic {
 public:
     FadeRectangle();                                 // 0x4e6100
     void start();                                    // 0x4e61f0: from black, over 2 s
+    void fadeOut();                                  // 0x4e6220: to black, over 2 s
     void draw() override;                            // 0x4e6260
     int mode = 0;                                    // +0x98: 0 fading in, 1 fading out, 2 done
     FadeRect rect;                                   // +0xa0 (640x480)

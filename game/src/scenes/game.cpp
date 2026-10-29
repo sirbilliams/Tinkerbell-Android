@@ -1,6 +1,6 @@
 // My_Stage, the two movie scenes ("Bumper", "Intro") and the sign-in room (first pass), reconstructed.
 #include "signin.h"
-#include "raytrace_scene.h"
+#include "london.h"
 #include "state.h"
 #include "game.h"
 #include "../vision/engine.h"
@@ -21,7 +21,7 @@ struct My_Stage : Stage {
     My_Stage() : Stage("Tinker Bell", "Bumper", "Tinker Bell\\setup\\game", 640, 480) {}
     // +0x10 0x4e72d0: creates the game's global state object (0x1840 bytes, 0x4ec6e0) into 0x63171c.
     // port: the state is a static (Game::state()); of its constructor only 0x4ec920 is ported so far.
-    void afterServices() override { Game::state().initGlobals(); }
+    void afterServices() override { Game::state().initGlobals(); Game::state().finishInit(); }
 };
 
 // The movie being shown (QuickTime drew into the window by itself; the port presents its frames).
@@ -98,7 +98,7 @@ struct SoundKind : ServiceKind {
 
 namespace Vision { void register_scene_task_kinds(); void register_screen_kind(); }
 void rt_test_register();
-static bool vo_suppressed_flag() { return Game::state().vo_suppressed; }
+static bool vo_suppressed_flag() { return Game::state().vo_busy(); }
 
 // The exe's static constructors, in their order (initlist 0x532004): the service kinds (Input, Keyboard,
 // Mouse, Ras, Scene, Screen, Sound, Task, QTMovie), the scenes, My_Stage.
@@ -110,7 +110,7 @@ void tb_game_register() {
     static MovieScene bumper("Bumper", "DIbumper", "Intro");          // 0x48aee0
     static MovieScene intro("Intro", "LOND_MO_intro", "signin");     // 0x48b150
     static Game::SignIn_Scene signin;                                 // 0x4afc40 (scenes/signin.cpp)
-    static Game::London_Scene london;                                 // (scenes/raytrace_scene.cpp, in progress)
+    static Game::London_Scene london;                                 // 0x4b6440 (scenes/london.cpp)
     g_vo_suppressed = vo_suppressed_flag;                             // *(0x63171c + 0x560)
     rt_test_register();                                              // test aid (TB_TEST_RT)
     static My_Stage st;                                               // 0x4e7280

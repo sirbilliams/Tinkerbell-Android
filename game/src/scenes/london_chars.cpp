@@ -1,6 +1,7 @@
 // Peter and Wendy in London, reconstructed from "Tinker Bell.exe" (see london_chars.h).
 #include "london_chars.h"
 #include <string.h>
+#include <stdlib.h>
 #include <strings.h>
 #include "tb.h"
 
@@ -9,22 +10,6 @@ namespace Game {
 using Vision::AnimationHelper;
 using Raytrace::Attachment;
 using Raytrace::Sprite3D;
-
-// ---------------------------------------------------------------- Curve3 (0x401000..)
-void Curve3::set0(const float v[3]) { memcpy(p0, v, sizeof p0); coeffs(); }
-void Curve3::set1(const float v[3]) { memcpy(p1, v, sizeof p1); coeffs(); }
-void Curve3::set2(const float v[3]) { memcpy(p2, v, sizeof p2); coeffs(); }
-void Curve3::coeffs() {                              // 0x4010a0
-    for (int i = 0; i < 3; i++) {
-        double q = (double)p1[i] * 4.0f;             // 0x5132a0
-        a[i] = (float)(q - (double)p0[i] * 3.0f - p2[i]);   // 0x51329c
-        b[i] = (float)(((double)p0[i] + p2[i]) * 2.0 - q);
-    }
-}
-void Curve3::at(float t, float out[3]) const {       // 0x401120
-    double tt = (double)t * t;
-    for (int i = 0; i < 3; i++) out[i] = (float)(tt * b[i] + (double)t * a[i] + p0[i]);
-}
 
 // ---------------------------------------------------------------- helpers
 static const float kTop = 800.0f;                    // 0x516d70: Peter's height before he lands
@@ -494,6 +479,7 @@ static bool any_of(const char *line, const char *const *names) {   // 0x423840 a
 }
 
 void PeterInLondon::say(const char *line) {          // 0x4bc8b0
+    if (getenv("TB_DEBUG_LONDON")) tb_log("london %u: Peter %s", Vision::frame_time(), line);
     static const char *const a[] = {"LOND_VO_PETsayhi", "LOND_VO_PETtnkwen", "LOND_VO_PETexplan",
                                     "LOND_VO_PETtnkhlp", "LOND_VO_PETupdown", "LOND_VO_PETentrdw",
                                     "LOND_VO_PEThand", "LOND_VO_PETcrow", "LOND_VO_PETstar", nullptr};
@@ -572,6 +558,7 @@ void WendyInLondon::position(float out[3]) {         // 0x4be7d0
 }
 
 void WendyInLondon::say(const char *line) {          // 0x4be880
+    if (getenv("TB_DEBUG_LONDON")) tb_log("london %u: Wendy %s", Vision::frame_time(), line);
     static const char *const g0[] = {"LOND_VO_WENaround", "LOND_VO_WENokcur", nullptr};
     static const char *const g1[] = {"LOND_VO_WENleft", "LOND_VO_WENright", "LOND_VO_WENup", "LOND_VO_WENdown",
                                      "LOND_VO_WENhelp1", "LOND_VO_WENinter1", "LOND_VO_WENribbn1",

@@ -29,6 +29,7 @@ private:
 };
 
 struct State {
+    void finishInit();                               // the rest of 0x4ec6e0: loads the cursors, cannon, voice-over
     void initGlobals();                              // 0x4ec920 (part): the "global" pack and the game cursors
     Vision::Ras *global_ras = nullptr;               // +0x0
     Vision::Graphic *cursor_active = nullptr;        // +0x60 ("glob_cu_active_")
@@ -37,8 +38,12 @@ struct State {
     bool paused3d = false;                           // +0x64: the 3D scenes' frame work stops (Global3DTask)
     int skill = 0;                                   // +0x68
     bool hover_up = false, hover_down = false;       // +0x75 +0x76: the 3D eye rises to 200 / stays
+    bool enter_released = true;                      // +0x77
     Saves saves;                                     // +0x3cc
-    bool vo_suppressed = false;                      // +0x560 (the idle prompts and repeaters stay quiet)
+    // +0x560: a voice line is playing (the byte is the VoiceOver member's +0x178 flag, the VoiceOver being at +0x3e8)
+    bool vo_busy() const;
+    void cameraSpot(int area, int spot, float out[4]) const;   // 0x4ec180 (0x4ec140 sets the camera there)
+    char skip_key = 0x1b;                            // +0x74: Escape (0x51 'Q' when 0x5a7579 is set)
     bool start_in_london = false;                    // +0x1818 (Big Ben chosen in the sign-in room)
     bool returning = false;                          // +0x1819 (back in the sign-in room: "WENgreet3")
     int frame_color = 0;                             // 0x4ef7b0(n) / +0x788 (port: the colour record itself: TODO)

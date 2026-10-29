@@ -402,9 +402,12 @@ struct ScreenKind : ServiceKind {
         // minus the window's spot, minus the hotspot 0x5a6930/34, which nothing sets) and draws it (0x40e680).
         if (g_cursor_graphic && g_cursor_graphic->visible) {
             int mx, my;
-            tb_GetCursorPos(&mx, &my);               // port: already in game coordinates (platform/dinput)
-            g_cursor_graphic->x = mx;
-            g_cursor_graphic->y = my;
+            tb_GetCursorPos(&mx, &my);               // port: already in game pixels (platform/dinput)
+            Canvas *cv = current_canvas();           // 0x4119f0: minus half the screen: the centre is (0, 0)
+            g_cursor_graphic->x = mx - cv->w / 2;
+            g_cursor_graphic->y = my - cv->h / 2;
+            int m = g_cursor_graphic->canvasMode();  // 0x40e680: the canvas in the graphic's mode first
+            if (m != g_canvas_mode) { unlock_canvas(); g_canvas_mode = m; lock_canvas(); }
             g_cursor_graphic->draw();
         }
         unlock_canvas();                             // 0x40e620

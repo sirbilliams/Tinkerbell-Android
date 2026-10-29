@@ -20,6 +20,13 @@ void FadeRectangle::start() {                        // 0x4e61f0
     mode = 0;
 }
 
+void FadeRectangle::fadeOut() {                      // 0x4e6220
+    start_time = frame_time();
+    rect.setLevel(1.0f);
+    rect.visible = true;
+    mode = 1;
+}
+
 // 0x4e6260: level = elapsed * 0.0005 (0x514504), capped at 1 (0x513710); reversed when fading out. At 2 s: done.
 void FadeRectangle::draw() {
     if (mode == 2) return;

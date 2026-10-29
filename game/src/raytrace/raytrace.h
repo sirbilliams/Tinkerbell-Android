@@ -78,6 +78,10 @@ struct WallObject {
     int key = 0;                                    // +0xa8: draw order among linked walls
     uint32_t frame_ms = 50;                         // +0xac
     bool on = false;                                // +0xb0
+    // the walls drawn over it (0x42e760 add, 0x42e710 find, 0x42e8c0 / 0x42e870 on / off)
+    WallObject *addLink(const char *name, const char *prefix, int key);
+    WallObject *findLink(const char *name);
+    void linkOn(const char *name, bool on);
 };
 
 // A graphic drawn with a sprite, offset and scaled with it (+0x148 prev, +0x14c next, +0x150 graphic, +0x17c on,
@@ -187,6 +191,16 @@ public:
     void lower(float d);                            // 0x42b2d0
     void turn(float deg);                           // 0x42a790
     double wallRange();                             // 0x4272e0
+    // the scene scripts' helpers
+    Sprite3D *pick(int x, int y);                   // 0x42c710: the nearest shown sprite under (x, y) within pick_max
+    bool hitSprite(Sprite3D *s, int x, int y);      // 0x42c7b0
+    double angleDeg() const;                        // 0x42b560: the view direction in degrees (x87 value)
+    void camPos(float out[3]) const { out[0] = camx; out[1] = eyef; out[2] = camz; }   // 0x42b490
+    double spriteDist(const Sprite3D *s) const;     // 0x42e3d0: the sprite's floor distance from the camera
+    double eyeWorld() const;                        // 0x42b520: the camera height in sprite units
+    WallObject *findWall(const char *name);         // 0x42d6a0
+    // 0x4292f0: a named collision box (x from minx to maxx, height y0..y1, z from minz to maxz)
+    void addBox(const char *name, float minx, float maxx, float y0, float y1, float minz, float maxz);
     // 0x4aa570 (Raytrace_Scene's, on its RayTrace): data\<name>.rts, the sprites loaded from `pack`
     bool loadSprites(const char *name, Vision::Ras *pack);
     void subdivide(unsigned lo, unsigned hi, Seg *startA, Seg *startB, Seg *endA, Seg *endB);
@@ -250,6 +264,7 @@ public:
     double slide = 0;                               // +0x560: the angle of the wall that stopped the last step
     uint32_t move_start = 0, move_last = 0;         // +0x8c +0x88: walking since / last step
     std::vector<Barrier *> barriers;                // +0x1158
+    float pick_max = 1e7f;                          // +0x1170: sprites farther than this can't be clicked
 private:
     void fallback(Seg *start, Seg *end, float *x, float *z);   // 0x4279a0
 };

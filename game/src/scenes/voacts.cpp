@@ -3,6 +3,12 @@
 namespace Vision {
 
 Graphic *g_cursor_graphic = nullptr;               // 0x5a69c4
+void set_cursor(Graphic *g, bool visible) {         // 0x4119b0
+    g_cursor_graphic = g;
+    if (g) g->visible = visible;
+}
+void show_cursor() { if (g_cursor_graphic) g_cursor_graphic->visible = true; }    // 0x4119d0 (port: null-safe)
+void hide_cursor() { if (g_cursor_graphic) g_cursor_graphic->visible = false; }   // 0x4119e0
 static bool never() { return false; }
 bool (*g_vo_suppressed)() = never;
 

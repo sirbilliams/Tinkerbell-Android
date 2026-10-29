@@ -235,8 +235,16 @@ bool tb_input_event(const SDL_Event &e) {
         case SDL_CONTROLLER_BUTTON_B: padButton(1, down); break;
         case SDL_CONTROLLER_BUTTON_X: padButton(2, down); break;
         case SDL_CONTROLLER_BUTTON_START: case SDL_CONTROLLER_BUTTON_BACK: padButton(3, down); break;
-        case SDL_CONTROLLER_BUTTON_LEFTSHOULDER: g_shoulder[0] = down; break;
-        case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: g_shoulder[1] = down; break;
+        // in the 3D scenes the shoulders are also Ctrl / Shift and Y is Enter as key events (the hover keys)
+        case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:
+            if (g_shoulder[0] != down && g_arrows) key(0x11, 0x1d, down, false);
+            g_shoulder[0] = down;
+            break;
+        case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER:
+            if (g_shoulder[1] != down && g_arrows) key(0x10, 0x2a, down, false);
+            g_shoulder[1] = down;
+            break;
+        case SDL_CONTROLLER_BUTTON_Y: if (g_arrows) key(0x0d, 0x1c, down, false); break;
         case SDL_CONTROLLER_BUTTON_DPAD_UP: g_dpad[0] = down; break;
         case SDL_CONTROLLER_BUTTON_DPAD_DOWN: g_dpad[1] = down; break;
         case SDL_CONTROLLER_BUTTON_DPAD_LEFT: g_dpad[2] = down; break;

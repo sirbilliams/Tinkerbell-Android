@@ -6,6 +6,8 @@
 #pragma once
 #include "../vision/engine.h"
 #include "../raytrace/raytrace.h"
+#include "../vision/faderect.h"
+#include "../raytrace/mover.h"
 
 namespace Game {
 
@@ -48,10 +50,12 @@ public:
     ~Raytrace_Scene() override;
     void run() override;                             // v10 0x4a9be0
     void leave() override;                           // v20 0x4aa110
+    void notify2(Vision::Service *s) override;       // v9 0x4a9690: the mouse -> v25, the keyboard -> v26
     virtual void spriteFrames();                     // v22 0x4a9a70: the sprites' animation frames
     virtual void forceNone();                        // v23 0x4aa950
     virtual void forceOff();                         // v24 0x4aa980
-    virtual void onMove() {}                         // v25 (0x4ef760 in the base: nothing to port yet)
+    virtual void onMouse() {}                        // v25 (0x4ef760 in the base): a mouse event, or a frame with a key held
+    virtual bool onKey() { return false; }           // v26 0x4a9680
     virtual void open(const char *name);             // v27 0x4a9ca0
     virtual void initPhysics();                      // v28 0x4a96d0
     virtual void physics();                          // v29 0x4a9760
@@ -73,6 +77,10 @@ public:
     float accel = 400, brake = 400, up_accel = 700, down_accel = 500, gravity = 100;  // +0x16a4..+0x16b4
     float friction = 8, friction_flying = 6;         // +0x16b8 +0x16bc
     PathPlanner planner;                             // +0xf8
+    Vision::Keyboard keys;                           // +0x12f4
+    Vision::Mouse mouse;                             // +0x1328
+    Vision::Screen over1, over2;                     // +0x14e0 +0x155c: drawn over the RayTrace
+    Vision::Image cursor_img;                        // +0x15d8 "glob_cu_normal_01"
 };
 
 // Global3DTask (vtable 0x516414, 0x4abfd0): every frame unless the game is paused (state +0x64): the sprites'
@@ -92,25 +100,23 @@ public:
     ~TinkerbellRaytraceScene() override;
     void open(const char *name) override;            // v27 0x4ab0f0
     void leave() override;                           // v20 0x4ab470
+    void forceNone() override;                       // v23 0x4abf30
+    void forceOff() override;                        // v24 0x4abf50
     virtual void hover();                            // v32 0x443820: the eye eases down (or up to 200)
+    void unforce() { forced_off = false; }           // v34 0x4abf70
+    void allowUpDown() { force[4] = force[5] = 0; }  // 0x4aa9b0 (Raytrace_Scene's)
+    bool flyThroughClouds(bool second);              // 0x4ab920: up through the cloud bank; true while flying
+    bool stateKeys();                                // 0x4ec5f0 (the state's, on this scene): Enter, Shift, Ctrl
     Tinkerbell3D *tink = nullptr;                    // +0x2744
     Global3DTask *global_task = nullptr;             // +0x2758
     uint32_t last_hover = 0;                         // +0x2754
     Vision::Ras *tinkpack = nullptr, *global3d = nullptr;   // +0x17d0 +0x17d4
-};
-
-// "london" (London_Scene@LondonScene, vtable 0x516a3c). port: for now only the 3D street itself: the
-// TinkerbellRaytraceScene layer (0x4ab0f0) and London's enter (0x4b5800) / run (0x4b5300) come next.
-class WendyInLondon;
-class PeterInLondon;
-class London_Scene : public TinkerbellRaytraceScene {
-public:
-    London_Scene() : TinkerbellRaytraceScene("london") {}
-    void enter() override;                           // 0x4b5800 (part)
-    void run() override;                             // port: London's own run (0x4b5300) is next
-    void leave() override;                           // v20 0x4b6230 (part)
-    WendyInLondon *wendy = nullptr;                  // +0x3500
-    PeterInLondon *peter = nullptr;                  // +0x3504
+    bool forced_off = false;                         // +0x17c8: the last of v23 / v24 was v24
+    bool busy = false;                               // +0x28e0: a scene's intro runs (London: the fade-in)
+    Vision::FadeRect dim;                            // +0x2838: full screen, depth -1000
+    Raytrace::Sprite3D *cloud1 = nullptr, *cloud2 = nullptr;   // +0x2748 +0x274c (the same sprite)
+    bool flying = false;                             // +0x2750
+    Raytrace::CameraTween tween;                     // +0x16c0
 };
 
 }  // namespace Game

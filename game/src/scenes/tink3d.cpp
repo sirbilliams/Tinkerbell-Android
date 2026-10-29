@@ -1,6 +1,7 @@
 // Tinkerbell3D and her commands, reconstructed from "Tinker Bell.exe" (see tink3d.h). x87 precision kept as in
 // the 3D engine: values on the FPU are doubles, stores to float locals and fields round.
 #include "tink3d.h"
+#include "voiceover.h"
 #include "raytrace_scene.h"
 #include <math.h>
 #include <stdio.h>
@@ -241,6 +242,9 @@ void Tinkerbell3D::init() {                          // v1 0x4da790
     pushBasic(1, 0, 0, 0);
     last_idle = Vision::frame_time();
 }
+
+void Tinkerbell3D::wave() { push(new TinkCmdAnimation("GLOB_CA_TNKwave_", nullptr)); }   // 0x4dbd90
+void Tinkerbell3D::say(const char *line) { Vision::VoiceOver::get().play(line); }        // 0x4cca20 -> 0x4c9400
 
 void Tinkerbell3D::release() {                       // v2 0x4da8b0
     RayTraceCharacter::release();

@@ -14,6 +14,7 @@ namespace Vision { void canvas_set_mode(int m); }
 namespace Raytrace {
 
 static const float kTwoPi = 6.28318548f;            // 0x5a95b8
+static const float kPi = 3.14159274f;               // 0x513d28
 
 static void draw_graphic(Vision::Graphic *g) {       // 0x41eae0 -> 0x40e680
     if (!g->visible) return;
@@ -281,6 +282,77 @@ void RayTrace::drawSprite(int i) {
         a->g->x = gx;
         a->g->y = gy;
     }
+}
+
+}  // namespace Raytrace
+
+namespace Raytrace {
+
+// 0x42c7b0: the sprite is shown, near enough, on screen, and its animation (placed and scaled as drawSprite
+// would) is hit at (x, y).
+bool RayTrace::hitSprite(Sprite3D *s, int x, int y) {
+    Vision::Animation *an = s->anim;
+    if (!an || !an->visible) return false;
+    if (!(s->dist <= pick_max)) return false;
+    double ang = atan2((double)s->z - camz, (double)s->x - camx);
+    if (ang < 0.0) ang += kTwoPi;
+    int n = (int)angles.size();
+    int col = view - (int)((double)n * ang / kTwoPi) - 320;
+    if (col < -(n / 2)) col += n;
+    else if (col > n / 2) col -= n;
+    if (!(col > -w && col < w)) return false;
+    if (s->dist == 0.0f) s->dist = 0.1f;            // 0x513714 compared, 0x3dcccccd stored
+    int idx;
+    if (col < 0) {
+        idx = -(w / 2);
+        if (col >= idx) idx = col;
+        idx += n;
+    } else {
+        idx = w / 2;
+        if (!(col > idx)) idx = col;
+    }
+    double cs = angles[(size_t)idx].dx;
+    double sc = 24000.0f / (double)s->dist * ((double)s->scale * 0.01f) / cs;   // 0x513d18, 0x513d4c
+    double p = ((double)160.0f + eyef) * 590.0f / s->dist / cs;               // 0x513d1c, 0x513d24
+    an->x = col;
+    an->y = (int)(p - (double)s->y * sc * 0.01);    // 0x513560
+    an->setScale(sc);                                // v5
+    return an->hit(x, y);                            // v11
+}
+
+// 0x42c710
+Sprite3D *RayTrace::pick(int x, int y) {
+    Sprite3D *best = nullptr;
+    float bestd = 1e7f;                              // 0x4b189680
+    for (Sprite3D *s : sprites) {
+        if (!(s->dist < bestd)) continue;
+        if (hitSprite(s, x, y)) { best = s; bestd = s->dist; }
+    }
+    return best;
+}
+
+double RayTrace::angleDeg() const { return (double)angf * 180.0f / kPi; }   // 0x513da4, 0x513d28
+
+double RayTrace::spriteDist(const Sprite3D *s) const {   // 0x42e3d0
+    double dx = (double)s->x - camx, dz = (double)s->z - camz;
+    return sqrt(dz * dz + dx * dx);
+}
+
+double RayTrace::eyeWorld() const {                  // 0x42b520
+    return ((double)eyef + 160.0f) * 590.0f * 100.0f / 24000.0f;
+}
+
+WallObject *RayTrace::findWall(const char *n) {      // 0x42d6a0
+    for (WallObject *w : walls)
+        if (strcasecmp(w->name.c_str(), n) == 0) return w;
+    return nullptr;
+}
+
+void RayTrace::addBox(const char *n, float minx, float maxx, float y0, float y1, float minz, float maxz) {   // 0x4292f0
+    Box *b = new Box();
+    b->name = n;
+    b->minx = minx; b->maxx = maxx; b->y0 = y0; b->y1 = y1; b->minz = minz; b->maxz = maxz;
+    boxes.push_back(b);
 }
 
 }  // namespace Raytrace

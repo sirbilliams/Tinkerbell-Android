@@ -1,5 +1,23 @@
 # Next session
 
+## Latest (Oct 28, London playable, ~50%)
+- game/src/scenes/london.*: London_Scene enter/run/leave, mouse (v25) / keys (v26) / cursor (v30), the per-frame
+  arrow picture, GemSign (the sign board), WallAnimation (John/Michael waving), RibbonInterface, LondonCursor,
+  the ribbon (0x4b6bf0), and the four scripts: Keyboard (arrows), Ribbon (mouse + ribbon to Wendy), TickTock
+  (sign, cannon timer, the "stop when she turns" clock game), Hunt (Peter, Tink, the flying lesson with
+  Shift/Ctrl/Enter, Peter's hand, up through the clouds), then change_scene("lost_tutorial").
+- Engine: RayTrace pick (0x42c710), wall links (0x42e760..), CameraMover (0x431600), CameraTween (0x4df3d0),
+  Curve3 in raytrace/mover.*, Cannon (cannon.*), state camera spots (0x4ebad0), the state's hover keys
+  (0x4ec5f0), Raytrace_Scene overlay screens + mouse/keyboard services, cloud banks + flyThroughClouds (0x4ab920).
+- Fixes found on the way: VoiceOver was never loaded (no voice lines played anywhere); the state's +0x560 is the
+  voice-over's "playing" flag (State::vo_busy); the cursor was drawn at the wrong place (mouse coordinates are
+  centred); Animation clocks use frame_time (0x4207b0) like the exe.
+- Test aids: TB_LONDON_SKIP=<n> skips the first n scripts, TB_DEBUG_LONDON=1 logs the lines, TB_RT_CAM.
+- Pad: Y = Enter (hover), shoulders also send Shift/Ctrl key events in 3D scenes. Start = Escape = the exe's
+  skip key in London (goes to "lost").
+- Next: "lost_tutorial" (LostTutorial_Scene) and the pixie dust bag / map icon / help bell of
+  TinkerbellRaytraceScene.
+
 ## Latest (Oct 25, Peter and Wendy, ~43%)
 - game/src/scenes/london_chars.*: PeterInLondon (0x4bbf90) and WendyInLondon (0x4bdaf0) with all their state
   classes (v0 enter, v1 leave, v2 tick, v3 ready, v4 mouth, v5 rest), say() (0x4bc8b0 / 0x4be880: talk state

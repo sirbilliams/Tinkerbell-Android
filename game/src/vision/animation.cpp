@@ -172,7 +172,7 @@ void Animation::draw() {                     // 0x403fe0 v14
     if (start_time != 0 && fps > 0) {
         uint32_t per = (uint32_t)(1000 / fps);
         if (per == 0) per = 1;
-        int e = (int)((real_time() - start_time) / per);
+        int e = (int)((frame_time() - start_time) / per);
         int idx = -1;
         if (mode == 0) {
             if (dir > 0) idx = e < n - 1 ? e : n - 1;
@@ -198,30 +198,30 @@ void Animation::draw() {                     // 0x403fe0 v14
 bool Animation::playing() {                  // 0x4e3110
     if (frames.empty() || start_time == 0 || fps <= 0) return false;
     int per = 1000 / fps;
-    int e = per ? (int)((real_time() - start_time) / (uint32_t)per) : 0;
+    int e = per ? (int)((frame_time() - start_time) / (uint32_t)per) : 0;
     if (mode == 0 && (int)frames.size() <= e) return false;
     if (mode == 2 && (int)frames.size() * 2 <= e) return false;
     return true;
 }
 void Animation::start() {                    // 0x4e3190
     setFrame(0);
-    start_time = real_time();
+    start_time = frame_time();
 }
 void Animation::forward() {                  // 0x4e31b0: restart the clock so that the frame on screen stays
     if (dir == 1 || fps <= 0) return;
     uint32_t per = (uint32_t)(1000 / fps);
-    uint32_t el = real_time() - start_time;
+    uint32_t el = frame_time() - start_time;
     if (el < per) el = per;
     dir = 1;
-    start_time = (el - (uint32_t)count() * per) + real_time();
+    start_time = (el - (uint32_t)count() * per) + frame_time();
 }
 void Animation::reverse() {                  // 0x4e3220
     if (dir == -1 || fps <= 0) return;
     uint32_t per = (uint32_t)(1000 / fps);
-    uint32_t el = real_time() - start_time;
+    uint32_t el = frame_time() - start_time;
     if (el < per) el = per;
     dir = -1;
-    start_time = (el - (uint32_t)count() * per) + real_time();
+    start_time = (el - (uint32_t)count() * per) + frame_time();
 }
 
 AnimationHelper::AnimationHelper(const char *p, int m) : Animation(p) {   // 0x4e3040
@@ -236,14 +236,14 @@ AnimationPlayer::~AnimationPlayer() {}       // 0x4e3370
 void AnimationPlayer::load() { playing_ = false; anim.load(); }        // 0x4e33f0
 void AnimationPlayer::unload() { Graphic::unload(); anim.unload(); }   // 0x4e3410
 void AnimationPlayer::start(bool loop) {     // 0x4e34c0
-    last_tick = real_time();
+    last_tick = frame_time();
     anim.setFrame(0);
     playing_ = true;
     anim.mode = loop ? 1 : 0;                // port: the exe stores the argument in the animation's +0x104
 }
 void AnimationPlayer::draw() {               // 0x4e3430
     if (!playing_) return;
-    uint32_t now = real_time();
+    uint32_t now = frame_time();
     if (delay <= now - last_tick) {
         last_tick = now;
         if (anim.mode == 0 && anim.count() - 1 <= anim.current()) { playing_ = false; return; }

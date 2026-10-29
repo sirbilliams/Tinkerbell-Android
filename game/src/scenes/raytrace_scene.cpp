@@ -1,8 +1,9 @@
 // Raytrace_Scene and MovementInputTask, reconstructed from "Tinker Bell.exe" (see raytrace_scene.h).
 #include "raytrace_scene.h"
-#include "london_chars.h"
 #include "tink3d.h"
 #include "state.h"
+#include "voacts.h"
+#include "cannon.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -39,14 +40,25 @@ void MovementInputTask::run() {                      // 0x4aaa30
         if (s->up && s->down) s->up = s->down = false;
         s->physics();                                // v29
         if (s->fwd || s->back || s->up || s->down || s->left || s->right) {
-            s->onMove();                             // v25
+            s->onMouse();                            // v25
             s->active_time = frame_time();
         }
     }
 }
 
 // ---------------------------------------------------------------- Raytrace_Scene
-Raytrace_Scene::Raytrace_Scene(const char *name) : Scene(name) {}
+Raytrace_Scene::Raytrace_Scene(const char *name)   // 0x4aa240
+    : Scene(name), over1(0, 0, 0, 0, 0, true, true), over2(0, 0, 0, 0, 0, true, true),
+      cursor_img("glob_cu_normal_01", 0, 0, 0, 0, 0, 0, true) {
+    keys.setClient(this);                            // 0x41f290
+    mouse.setClient(this);
+}
+
+void Raytrace_Scene::notify2(Service *s) {          // v9 0x4a9690
+    if (current_scene() != this) return;
+    if (s == &mouse) onMouse();                      // v25
+    if (s == &keys) onKey();                         // v26
+}
 Raytrace_Scene::~Raytrace_Scene() {                 // port: quitting inside the scene frees its packs too
     delete input;
     if (walls) ras_close(walls);
@@ -147,8 +159,9 @@ void Raytrace_Scene::open(const char *nm) {
     if (!nm) { vision_log("Raytrace_Scene::open() NEEDS NAME"); return; }
     opened = frame_time();                           // +0xdc
     forceNone();                                     // +0xe0..+0xf4 cleared
-    // port: the mouse/keyboard/joystick services (+0x12c0/+0x12f4/+0x1328) are global in this port, and the
-    // 0x158-byte graphic 0x4a9410 (+0x124) is not ported yet.
+    mouse.activate();                                // +0x1328, +0x12f4 (port: the joystick +0x12c0 is the pad,
+    keys.activate();                                 // read as keys by platform/dinput)
+    // port: the 0x158-byte graphic 0x4a9410 (+0x124) is not ported yet.
     initPhysics();                                   // v28
     input = new MovementInputTask(this);             // +0x12c
     input->activate();
@@ -170,6 +183,14 @@ void Raytrace_Scene::open(const char *nm) {
     ras_set_current(ground);
     rt.loadGround(("data\\" + n + ".grn").c_str());  // 0x42cc80
     rt.loadAll();
+    over1.activate();                                // +0x665 = 1 (port: no use found yet)
+    over1.loadAll();
+    over2.activate();
+    over2.loadAll();
+    cursor_img.load();                               // v15
+    set_cursor(&cursor_img, g_cursor_graphic ? g_cursor_graphic->visible : false);   // 0x4119b0
+    show_cursor();                                   // 0x4119d0
+    // port: the cursor hot spot (0x5a6930/34) = 0 (the Image draws from its corner already)
     tb_input_set_arrows(true);                       // port: the pad as the arrow keys (platform/dinput.h)
     if (const char *c = getenv("TB_RT_CAM"))         // desktop test aid (not in the game): "x,z,degrees,eye"
         sscanf(c, "%f,%f,%f,%f", &cam_x, &cam_z, &cam_deg, &cam_eye);
@@ -299,12 +320,21 @@ TinkerbellRaytraceScene::~TinkerbellRaytraceScene() {
 // v27 0x4ab0f0 (part): the 3D scene, then the global_3d and tinkerbell3D packs, Tink and the frame task.
 void TinkerbellRaytraceScene::open(const char *nm) {
     Game::state().hover_up = false;                        // +0x75
+    busy = false;                                    // +0x28e0
     Raytrace_Scene::open(nm);
     global3d = ras_open("global_3d", "", &data_device());   // +0x17d4
     global3d->load();
     ras_set_current(global3d);
-    // port: the toolbar (+0x17d8, +0x19a0, 0x4efd50 +0x1998, +0x1fe8), 0x4befe0 (+0x2740), the help bell and the
-    // cloud banks are not ported yet
+    // port: the pixie-dust cursor (+0x17d8), the Neverland map icon (+0x19a0), the pixie dust bag (+0x1998) and
+    // the help bell (+0x1fe8) are not ported yet (London hides them); nor 0x4befe0 (+0x2740)
+    rt.pick_max = 975.0f;                            // +0x12b0 = 0x516378
+    over1.layer(0)->add(&Game::cannon());            // state +0x7c0
+    Game::cannon().hide();                           // 0x4e3bf0
+    // port: the joystick service (+0x12c0) is the pad, read as keys (platform/dinput)
+    g_mouse.x = 0;                                   // 0x5a6e60 / 0x5a6e7c
+    g_mouse.y = 0;
+    dim.x = 0; dim.y = 0; dim.z = -1000; dim.w = 640; dim.h = 480;   // +0x2890..+0x28a0
+    over1.layer(0)->add(&dim);
     tinkpack = ras_open("tinkerbell3D", "", &data_device());   // +0x17d0
     tinkpack->load();
     ras_set_current(tinkpack);
@@ -313,9 +343,79 @@ void TinkerbellRaytraceScene::open(const char *nm) {
     reset();                                         // 0x421110
     global_task = new Global3DTask(this);
     global_task->activate();
+    cloud1 = rt.addSprite("GLOB_LY_cloudbank_", "GLOB_LY_cloudbank_", 1);   // 0x42d9d0
+    cloud1->load();
+    cloud1->anim->visible = false;
+    cloud1->scale = 100.0f;
+    cloud2 = rt.findSprite("GLOB_LY_cloudbank_");
+    cloud2->load();
+    cloud2->anim->visible = false;
+    cloud2->scale = 100.0f;
+    show_cursor();                                   // 0x4119d0
+    // port: +0x2831 = 0 and the "treasure" scene's extra (0x4ab3f7..) belong to scenes not ported yet
 }
 
+// 0x4ab920: the cloud bank 150 ahead at height 1500, the camera rising to 475 in 2 s, the hover held, input off.
+bool TinkerbellRaytraceScene::flyThroughClouds(bool second) {
+    if (!flying) {
+        float X = rt.camx, Z = rt.camz, A = (float)rt.angleDeg();
+        double ang = (double)3.14159274f * A * 0.00555555569f;   // 0x516374, 0x513d90
+        float px = (float)(cos(ang) * 150.0 + X);    // 0x516440
+        float pz = (float)(sin(ang) * 150.0 + Z);
+        cloud1->setPos(px, 1500.0f, pz);             // 0x44bb8000
+        cloud2->setPos(px, 1500.0f, pz);
+        if (second) cloud2->anim->visible = true;
+        else cloud1->anim->visible = true;
+        tween.start(&rt, X, 475.0f, Z, A, 2000.0);   // 0x4df3d0
+        Game::state().hover_down = true;             // +0x76
+        paused = true;                               // +0x128
+        Game::state().hover_up = false;
+        flying = true;
+        return true;
+    }
+    if (tween.step()) return flying;                 // 0x4df4d0
+    flying = false;
+    return false;
+}
+
+// 0x4ec5f0 (state +0x77: Enter was let go): Enter toggles the hover up (the eye to 200, up/down keys off), Shift
+// or Ctrl holds the eye where it is.
+bool TinkerbellRaytraceScene::stateKeys() {
+    State &st = Game::state();
+    if (g_key.vk == 0x0d && g_key.up && !st.enter_released) st.enter_released = true;
+    if (!g_key.down) return false;
+    if (!st.hover_up) {
+        if (g_key.vk == 0x0d && st.enter_released && forced_off != true) {   // 0x4abf80
+            st.hover_up = true;
+            st.hover_down = false;
+            force[4] = force[5] = 1;                 // 0x4aa9c0
+            st.enter_released = false;
+            return true;
+        }
+        if (!st.hover_down) {
+            bool ok = force[4] != 1 && force[5] != 1;   // 0x4aa9e0
+            if ((g_key.vk == 0x10 || g_key.vk == 0x11) && ok) {
+                st.hover_down = true;
+                return true;
+            }
+        }
+    } else if (g_key.vk == 0x0d && st.enter_released) {
+        st.hover_up = false;
+        st.hover_down = false;
+        allowUpDown();                               // 0x4aa9b0
+        st.enter_released = false;
+        return true;
+    }
+    return false;
+}
+
+void TinkerbellRaytraceScene::forceNone() { Raytrace_Scene::forceNone(); forced_off = false; }   // v23 0x4abf30
+void TinkerbellRaytraceScene::forceOff() { Raytrace_Scene::forceOff(); forced_off = true; }      // v24 0x4abf50
+
 void TinkerbellRaytraceScene::leave() {              // v20 0x4ab470 (part)
+    cloud1 = cloud2 = nullptr;                       // port: 0x42f2b0 unloads them; RayTrace::release frees them
+    Game::cannon().detach();                         // 0x412200
+    dim.detach();
     if (global_task) { global_task->deactivate(); delete global_task; global_task = nullptr; }
     if (tink) { tink->release(); delete tink; tink = nullptr; }
     if (tinkpack) ras_close(tinkpack);
@@ -359,6 +459,10 @@ void Raytrace_Scene::run() {                         // v10 0x4a9be0
 void Raytrace_Scene::leave() {                       // v20 0x4aa110
     tb_input_set_arrows(false);
     if (input) { input->deactivate(); delete input; input = nullptr; }
+    cursor_img.unload();                             // v16
+    if (g_cursor_graphic == &cursor_img) g_cursor_graphic = nullptr;   // port: the exe leaves it pointing here
+    mouse.deactivate();
+    keys.deactivate();
     rt.unloadAll();
     rt.clear();
     rt.deactivate();
@@ -369,50 +473,13 @@ void Raytrace_Scene::leave() {                       // v20 0x4aa110
     sprites = nullptr;
     if (ground) ras_close(ground);
     ground = nullptr;
+    over1.clear();                                   // 0x41ebc0
+    over1.deactivate();
+    over1.unloadAll();                               // 0x41ec00
+    over2.clear();
+    over2.deactivate();
+    over2.unloadAll();
     deactivate();
-}
-
-// ---------------------------------------------------------------- London
-void London_Scene::enter() {                         // part of 0x4b5800 (-> 0x4ab0f0 -> 0x4a9ca0)
-    open(name());
-    tink->hide();                                    // 0x4cca40
-    wendy = new WendyInLondon(&rt);                  // 0x4bdaf0
-    peter = new PeterInLondon(&rt);                  // 0x4bbf90
-    // port: the scripts (0x4b9b30), the ribbon, the waterfall, the corner block, the wave and arrow images,
-    // the cursors and the music come next
-}
-
-// port: until 0x4b5300 is in, the frame loop only: Wendy every frame, as all of London's script loops do; Peter
-// only in the last one (TB_LONDON_PETER=<ms> runs him too, and lands him after that long; for testing).
-void London_Scene::run() {
-    wait(1);
-    const char *pe = getenv("TB_LONDON_PETER");
-    bool with_peter = pe != nullptr;
-    uint32_t land_at = frame_time() + (pe ? (uint32_t)atoi(pe) : 0);
-    bool landed = false;
-    const char *say = getenv("TB_LONDON_SAY");       // test aid: a line for Peter ("PET" in it) or Wendy, after 3 s
-    uint32_t say_at = frame_time() + 3000;
-    for (;;) {
-        if (say && frame_time() >= say_at) {
-            if (strstr(say, "PET")) peter->say(say);
-            else wendy->say(say);
-            say = nullptr;
-        }
-        if (wendy) wendy->update();                  // 0x4be780
-        if (with_peter && !landed && frame_time() >= land_at) { peter->land(); landed = true; }
-        if (with_peter && peter) peter->update();    // 0x4bc880
-        cursorUpdate();                              // v30
-        wait(0);
-    }
-}
-
-void London_Scene::leave() {                         // v20 0x4b6230 (part)
-    Vision::VoiceOver::get().stop();                 // 0x4c9260
-    delete wendy;
-    wendy = nullptr;
-    delete peter;
-    peter = nullptr;
-    TinkerbellRaytraceScene::leave();
 }
 
 }  // namespace Game
