@@ -19,6 +19,7 @@ using Gorilla::Object;
 bool tb_exiting();                 // 0x4215b0: 0x5a7638 (and 0x5a9598, list teardown skipped) at exit
 void tb_set_exiting();
 uint32_t frame_time();             // 0x4207b0: 0x5a7520, the time of the current frame (ms since start)
+int crt_rand();                    // the C runtime's rand() (MSVC's generator): 0..0x7fff
 int vision_random(int n);          // 0x425d40: (rand() * n) >> 15, 0..n-1 (MSVC's rand)
 uint32_t real_time();              // 0x4207c0: timeGetTime() - 0x5a7524
 void set_active(bool on);          // 0x420750: WM_ACTIVATEAPP; time stops while inactive

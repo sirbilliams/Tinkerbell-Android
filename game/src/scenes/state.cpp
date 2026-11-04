@@ -145,9 +145,169 @@ bool Saves::anyMapSegment() {                        // 0x4eabb0
     return false;
 }
 
+void Saves::setMapSegment(const char *area) {
+    cur->set(std::string(area) + " Treasure Map", "Map Segment", "true");
+}
+
+bool Saves::allMapSegments() {                       // 0x4eaa70
+    static const char *const areas[5] = {"Mermaid", "Village", "Skull", "Lost", "Starry"};
+    for (const char *a : areas)
+        if (!mapSegment(a)) return false;
+    return true;
+}
+
 int Saves::gameInfo(const char *game) {                  // 0x4e9d70
     const std::string *v = cur->get(game, "Info");      // *0x5434e4
     return v ? atoi(v->c_str()) : 0;
 }                   // 0x4e9af0 (port: TODO with the area progress)
+
+}  // namespace Game
+
+namespace Game {
+
+// ---------------------------------------------------------------- the areas' puzzle pieces
+
+void Saves::setGameInfo(const char *game, int v) {   // 0x4e9db0
+    char b[16]; snprintf(b, sizeof b, "%d", v);      // "%d"
+    cur->set(game, "Info", b);                       // *0x5434e4
+}
+
+// 0x4e9e40: the five pieces of "<Area> Tokens" ("location<n>" (the state), "active<n>" (easy), "x<n>"...). A key
+// that is missing keeps the value read for the piece before.
+std::vector<TokenRecord> Saves::tokens(const char *sec) {
+    std::vector<TokenRecord> v;
+    Vision::Database::Section *s = cur->section(sec, true);   // 0x4e4fb0
+    if (s->entries.empty()) return v;                // +0x28
+    TokenRecord r;
+    for (int i = 0; i < 5; i++) {
+        char n[16]; snprintf(n, sizeof n, "%d", i);  // "%d"
+        const std::string *e;
+        if ((e = cur->get(sec, std::string("location") + n))) r.state = atoi(e->c_str());   // 0x4242c0
+        if ((e = cur->get(sec, std::string("active") + n))) r.easy = !(e->empty() || *e == "0");   // 0x4eb120
+        if ((e = cur->get(sec, std::string("x") + n))) r.x = (float)atof(e->c_str());   // 0x4f595c
+        if ((e = cur->get(sec, std::string("y") + n))) r.y = (float)atof(e->c_str());
+        if ((e = cur->get(sec, std::string("z") + n))) r.z = (float)atof(e->c_str());
+        v.push_back(r);                              // 0x4eaee0
+    }
+    return v;
+}
+
+void Saves::setTokens(const char *sec, const std::vector<TokenRecord> &v) {   // 0x4ea1b0
+    for (int i = 0; i < 5 && i < (int)v.size(); i++) {
+        char n[16], b[64];
+        snprintf(n, sizeof n, "%d", i);
+        const TokenRecord &r = v[i];
+        snprintf(b, sizeof b, "%d", r.state);
+        cur->set(sec, std::string("location") + n, b);
+        cur->set(sec, std::string("active") + n, r.easy ? "true" : "");   // 0x4eb140
+        snprintf(b, sizeof b, "%f", (double)r.x);    // "%f"
+        cur->set(sec, std::string("x") + n, b);
+        snprintf(b, sizeof b, "%f", (double)r.y);
+        cur->set(sec, std::string("y") + n, b);
+        snprintf(b, sizeof b, "%f", (double)r.z);
+        cur->set(sec, std::string("z") + n, b);
+    }
+}
+
+// 0x4ecbf0: "hiding_places.dat" [area]: "easy" and "hard", each with places whose first three children are x, y
+// and z (by position).
+void HidingPlaces::load(const char *area) {
+    Vision::Database db("hiding_places", "dat", "");  // 0x4e3c80 (cached by the exe), loaded once (0x4e4980)
+    db.load();
+    Vision::Database::Section *s = db.section(area, true);
+    auto read = [](const Vision::Database::Entry &e, P &p) {
+        const std::vector<Vision::Database::Entry> &c = e.children;
+        p.x = c.size() > 0 ? (float)atof(c[0].value.c_str()) : 0;   // 0x4f595c
+        p.y = c.size() > 1 ? (float)atof(c[1].value.c_str()) : 0;
+        p.z = c.size() > 2 ? (float)atof(c[2].value.c_str()) : 0;
+    };
+    for (const Vision::Database::Entry &e : s->entries) {
+        if (e.key != "easy") continue;               // 0x424ea0 (the first one)
+        for (const Vision::Database::Entry &h : e.children) { P p; read(h, p); easy.push_back(p); }   // 0x4f1150
+        break;
+    }
+    for (const Vision::Database::Entry &e : s->entries) {
+        if (e.key != "hard") continue;
+        for (const Vision::Database::Entry &h : e.children) { P p; read(h, p); hard.insert(hard.begin(), p); }
+        break;
+    }
+}
+
+// 0x4f1510, MSVC's random_shuffle: each element from the second swapped with one at or before it.
+static void shuffle(std::vector<HidingPlaces::P> &v) {
+    for (size_t i = 1; i < v.size(); i++) {
+        uint32_t r = (uint32_t)Vision::crt_rand();   // (& 0x7fff; the widening for longer lists never applies)
+        size_t j = r % (i + 1);
+        std::swap(v[i], v[j]);
+    }
+}
+
+// 0x4ecf90: both lists shuffled the first time; then the last hard place while fewer than `skill` were handed
+// out, else the last easy one.
+void HidingPlaces::assign(TokenInfo *t, int skill) {
+    if (!shuffled) {
+        if (!easy.empty()) shuffle(easy);
+        if (!hard.empty()) shuffle(hard);
+        shuffled = true;
+    }
+    if (given < skill && !hard.empty()) {
+        P p = hard.back();
+        t->setPos(p.x, p.y, p.z);
+        t->setHard();
+        hard.pop_back();
+        given++;
+        return;
+    }
+    P p = easy.back();                               // port: the exe reads before the start of an empty list
+    t->setPos(p.x, p.y, p.z);
+    t->setEasy();
+    easy.pop_back();
+    given++;
+}
+
+// 0x4ee860: the saved pieces; a new player's: three hidden in the Lost Boys' area, one each from Pirate Flag Tag
+// (2) and Mud Pie (3), at random.
+void State::loadLostTokens() {
+    std::vector<TokenRecord> v = saves.tokens("Lost Tokens");   // 0x4e9e20
+    if (!v.empty()) {
+        for (size_t i = 0; i < v.size() && i < 5; i++) {
+            lost[i].state = v[i].state;
+            if (v[i].easy) lost[i].setEasy(); else lost[i].setHard();
+            lost[i].x = v[i].x;
+            lost[i].y = v[i].y;
+            lost[i].z = v[i].z;
+        }
+        return;
+    }
+    for (TokenInfo &t : lost) t.state = 0;
+    HidingPlaces hp;                                 // 0x4f1110
+    hp.load("lost");                                 // 0x4ecbf0
+    for (int n = 0; n < 3; n++) {
+        int r;
+        do r = Vision::vision_random(5); while (lost[r].state != 0);   // the local random object (0x425d40)
+        lost[r].state = 1;
+        hp.assign(&lost[r], skill);                  // +0x68
+    }
+    int r;
+    do r = Vision::vision_random(5); while (lost[r].state != 0);
+    lost[r].state = 2;
+    for (TokenInfo &t : lost)
+        if (t.state == 0) { t.state = 3; break; }
+    saveLostTokens();
+}
+
+void State::saveLostTokens() {                       // 0x4eec40
+    std::vector<TokenRecord> v(5);
+    for (int i = 0; i < 5; i++) {
+        v[i].state = lost[i].state;
+        if (lost[i].state != 1) continue;            // only a hidden piece keeps its place (the others: the
+                                                     // exe's uninitialised local; port: zeros)
+        v[i].easy = lost[i].easy;
+        v[i].x = lost[i].x;
+        v[i].y = lost[i].y;
+        v[i].z = lost[i].z;
+    }
+    saves.setTokens("Lost Tokens", v);               // 0x4ea170
+}
 
 }  // namespace Game

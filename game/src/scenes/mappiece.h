@@ -1,0 +1,36 @@
+// A treasure map segment won by an area's puzzle game, flying in front of the camera, reconstructed from
+// "Tinker Bell.exe": MapPiece (the shared part: ease 0x4e73f0, busy v15 0x4e73e0) and the Lost Boys' one,
+// BucketMapPiece (vtable 0x517aac, ctor 0x4e8000, dtor 0x4545d0, load v11 0x4e8040, clear v12 0x4e8910,
+// show v13 0x4e80f0, stop v14 0x4e80b0, run v10 0x4e8180): it rises out of the bucket tree, comes to 250 in
+// front of the camera, and goes in a poof of sparkles.
+#pragma once
+#include "../vision/engine.h"
+#include "../raytrace/raytrace.h"
+
+namespace Game {
+
+class MapPiece : public Vision::Task {
+public:
+    explicit MapPiece(Raytrace::RayTrace *r) : Task(nullptr), rt(r) {}
+    virtual void load() = 0;                         // v11 +0x2c
+    virtual void clear() { piece = poof = nullptr; } // v12 +0x30
+    virtual void show() = 0;                         // v13 +0x34
+    virtual void stop();                             // v14 +0x38
+    bool busy() { return active(); }                 // v15 +0x3c 0x4e73e0 (the service's +0x14)
+    bool ease(Raytrace::Sprite3D *s);                // 0x4e73f0: a fifth of the way to 250 ahead; false once there
+    Raytrace::RayTrace *rt;                          // +0xc0
+    bool fresh = false;                              // +0xc4: take the camera's place first
+    float cx = 0, ceye = 0, cz = 0, cang = 0;        // +0xc8..+0xd4
+    Raytrace::Sprite3D *piece = nullptr;             // +0xd8
+    Raytrace::Sprite3D *poof = nullptr;              // +0xdc
+};
+
+class BucketMapPiece : public MapPiece {
+public:
+    explicit BucketMapPiece(Raytrace::RayTrace *r) : MapPiece(r) {}   // 0x4e8000
+    void load() override;                            // v11 0x4e8040
+    void show() override;                            // v13 0x4e80f0
+    void run() override;                             // v10 0x4e8180
+};
+
+}  // namespace Game

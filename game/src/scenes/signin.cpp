@@ -174,9 +174,11 @@ void SignInFrame::save(int n) {
     sv.setSkill(skill);
     Game::state().skill = skill;                           // +0x68
     sv.setInt("Frame Color", n);
-    Game::state().frame_color = n;                         // 0x4ef7b0(n); +0x788 = the colour record (port: TODO)
-    // port: TODO 0x4e6390, 0x4ed270, 0x4ed9c0, 0x4ee110, 0x4ee860, 0x4eefc0 load each area's progress from the
-    // save; they come with the areas' scenes.
+    Game::state().frame_color = n;                         // 0x4ef7b0(n)
+    Game::state().firsts = &Game::state().players[n];      // +0x788 = +0x650 + n * 0x34
+    // port: TODO 0x4e6390, 0x4ed270, 0x4ed9c0, 0x4ee110 and 0x4eefc0 load the other areas' progress from the
+    // save; they come with the areas' scenes (until then the rand() draws before the Lost Boys' differ).
+    Game::state().loadLostTokens();                        // 0x4ee860
     sv.flush();                                      // 0x4e9840
 }
 

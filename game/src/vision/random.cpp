@@ -7,10 +7,10 @@
 namespace Vision {
 static uint32_t g_holdrand = 0;
 static bool g_seeded = false;
-static int msvc_rand() {
+int crt_rand() {
     if (!g_seeded) { g_holdrand = (uint32_t)time(nullptr); g_seeded = true; }
     g_holdrand = g_holdrand * 214013u + 2531011u;
     return (int)((g_holdrand >> 16) & 0x7fff);
 }
-int vision_random(int n) { return (int)((uint32_t)(msvc_rand() * n) >> 15); }
+int vision_random(int n) { return (int)((uint32_t)(crt_rand() * n) >> 15); }
 }  // namespace Vision

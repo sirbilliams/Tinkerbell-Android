@@ -109,6 +109,7 @@ struct Sprite3D {
     void setPos(float px, float py, float pz) { x = px; y = py; z = pz; }   // 0x42f740 (0x42f700 reads them)
     Attachment *findAttached(const char *n);        // 0x42f350
     Attachment *attach(const char *n, const char *prefix, int gz);   // 0x42f390: nullptr when the name is taken
+    void detach(const char *n);                     // 0x42f560: unlinked and deleted ("Could not remove sticker")
     bool loaded = false;                            // +0x00
     std::vector<std::pair<std::string, Vision::Animation *>> anims;   // +0x04: by name (the main one first)
     float dist = 0;                                 // +0x14

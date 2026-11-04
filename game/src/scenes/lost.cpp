@@ -605,3 +605,9 @@ dusted:
 #undef REMIND
 
 }  // namespace Game
+
+namespace Game {
+// 0x442e00 on the Lost Boys' scene (the static at 0x5ac4f8): its piece display. port: the scene comes next; until
+// then nothing to refresh.
+void lost_refresh_tokens() {}
+}  // namespace Game

@@ -112,6 +112,19 @@ Attachment *Sprite3D::attach(const char *n, const char *p, int gz) {
     return a;
 }
 
+void Sprite3D::detach(const char *n) {               // 0x42f560
+    Attachment *a = findAttached(n);
+    if (!a) { Vision::vision_log("Could not remove sticker %s", n); return; }
+    if (a == attached) {
+        attached = a->next;
+        if (a->next) a->next->prev = nullptr;
+    } else {
+        if (a->next) a->next->prev = a->prev;
+        a->prev->next = a->next;
+    }
+    delete a;                                        // 0x42e430 + free
+}
+
 // 0x42da60
 bool RayTrace::removeSprite(const char *n) {
     for (size_t i = 0; i < sprites.size(); i++)

@@ -11,7 +11,9 @@ namespace Vision {
 
 class Database {
 public:
-    struct Entry { std::string key, value; };
+    // An entry's children are the lines under it indented one tab deeper (the hiding places' "easy" ->
+    // "hiding1" -> "x=..."); 0x4e4860 builds the tree, +0x10 first child, +0x1c next sibling.
+    struct Entry { std::string key, value; std::vector<Entry> children; };
     struct Section { std::string name, comment; std::vector<Entry> entries; };
 
     // 0x4e3c80(name, ext) + 0x4e4b60(folder) + 0x4e4980: the file is <game>/<folder>/<name>.<ext>.

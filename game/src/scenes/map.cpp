@@ -136,7 +136,11 @@ int IndianVillageTCD::count() {                      // 0x4a6dd0: the games ende
 bool IndianVillageTCD::hasSign() { return Game::state().saves.mapSegment("Village"); }   // 0x4ea870
 int StarrySkiesTCD::count() { return count_of(Game::state().games_star, 4, 5); }        // 0x4a6eb0
 bool StarrySkiesTCD::hasSign() { return Game::state().saves.mapSegment("Starry"); }     // 0x4ea9f0
-int LostBoysTCD::count() { return count_of(Game::state().games_lost, 4, 5); }           // 0x4a6fa0
+int LostBoysTCD::count() {                           // 0x4a6fa0
+    int g[5];
+    for (int i = 0; i < 5; i++) g[i] = Game::state().lost[i].state;
+    return count_of(g, 4, 5);
+}           // 0x4a6fa0
 bool LostBoysTCD::hasSign() { return Game::state().saves.mapSegment("Lost"); }          // 0x4ea970 (inlined)
 int SkullRockTCD::count() { return count_of(Game::state().games_skrl, 5, 6); }          // 0x4a7090
 bool SkullRockTCD::hasSign() { return Game::state().saves.mapSegment("Skull"); }        // 0x4ea8f0

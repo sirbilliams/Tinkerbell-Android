@@ -32,8 +32,11 @@ bool Database::load() {                              // 0x4e4980
     while (pos <= text.size()) {
         size_t e = text.find('\n', pos);
         if (e == std::string::npos) e = text.size();
-        std::string line = trim(text.substr(pos, e - pos));
+        std::string raw = text.substr(pos, e - pos);
+        std::string line = trim(raw);
         pos = e + 1;
+        int depth = 0;                                // 0x4e4200: the leading tabs
+        while (depth < (int)raw.size() && raw[depth] == '\t') depth++;
         if (line.empty()) continue;
         if (line.compare(0, 2, "//") == 0) { comment += (comment.empty() ? "" : "\r\n") + line; continue; }
         if (line[0] == '[') {
@@ -50,9 +53,25 @@ bool Database::load() {                              // 0x4e4980
         Entry en;
         en.key = trim(line.substr(0, eq));
         en.value = eq == std::string::npos ? std::string() : trim(line.substr(eq + 1));
-        cur->entries.push_back(en);
+        // 0x4e4860: one tab deeper than the last entry is its child; less deep goes back up ("over nested":
+        // more than one deeper, which the exe reports; port: taken as one deeper)
+        std::vector<Entry> *list = &cur->entries;
+        for (int d = 0; d < depth && !list->empty(); d++) list = &list->back().children;
+        list->push_back(en);
     }
     return true;
+}
+
+// 0x4e4ba0: an entry per line, indented a tab per level, "=value" when it has one, its children under it.
+// port: the exe can also start a line with '\\' (an entry flag no game file sets).
+static void writeEntries(std::string &out, const std::vector<Database::Entry> &es, int depth) {
+    for (const Database::Entry &e : es) {
+        out.append((size_t)depth, '\t');                 // "\t"
+        out += e.key;                                    // "%s"
+        if (!e.value.empty()) out += "=" + e.value;      // "=%s"
+        out += "\r\n";
+        writeEntries(out, e.children, depth + 1);
+    }
 }
 
 bool Database::write() {                             // 0x4e4e30 via 0x4e4ca0
@@ -61,8 +80,7 @@ bool Database::write() {                             // 0x4e4e30 via 0x4e4ca0
         const Section &s = sections_[i];
         if (!s.comment.empty()) out += s.comment + "\r\n";      // "%s\r\n"
         out += "[" + s.name + "]\r\n";                          // "[%s]\r\n"
-        for (size_t k = 0; k < s.entries.size(); k++)           // 0x4e4ba0
-            out += s.entries[k].key + "=" + s.entries[k].value + "\r\n";
+        writeEntries(out, s.entries, 0);                        // 0x4e4ba0
         out += "\r\n";                                          // 0x53f33c
     }
     std::string dir = path_.substr(0, path_.rfind('/'));
