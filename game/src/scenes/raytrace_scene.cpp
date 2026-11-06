@@ -370,6 +370,7 @@ void TinkerbellRaytraceScene::open(const char *nm) {
     reset();                                         // 0x421110
     global_task = new Global3DTask(this);
     global_task->activate();
+    leaving = false;                                 // +0x2831 (0x4ab3f1)
     cloud1 = rt.addSprite("GLOB_LY_cloudbank_", "GLOB_LY_cloudbank_", 1);   // 0x42d9d0
     cloud1->load();
     cloud1->anim->visible = false;
@@ -587,4 +588,17 @@ void SceneFader::draw() {
     rect.draw();                                     // v14
 }
 
+}  // namespace Game
+
+namespace Game {
+// 0x4abda0: with the plain cursor showing, the active one over a character of the scene's list.
+void TinkerbellRaytraceScene::charCursor() {
+    if (!g_cursor_graphic || strcmp(g_cursor_graphic->name(), "glob_cu_normal_") != 0) return;   // 0x423c60
+    for (Raytrace::RayTraceCharacter *c : chars) {
+        Raytrace::Sprite3D *s = c->sprite();         // 0x4cc8b0
+        if (!s || !rt.hitSprite(s, Vision::g_mouse.x, Vision::g_mouse.y)) continue;   // 0x42c7b0
+        set_cursor(Game::state().cursor_active, g_cursor_graphic->visible);   // 0x4119b0 (+0x60)
+        return;
+    }
+}
 }  // namespace Game

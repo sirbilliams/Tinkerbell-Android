@@ -47,6 +47,16 @@ void Sprite3D::load() {                              // 0x42ef20
     anim->visible = true;
 }
 
+void Sprite3D::unload() {                            // 0x42f2b0
+    if (!loaded) return;
+    for (auto &e : anims) e.second->unload();        // v16 (the main one is in the list too)
+    for (Attachment *a = attached; a; a = a->next)
+        if (a->g) a->g->unload();                    // port: the exe also clears +0x150 (the embedded animation's
+                                                     // pointer) and the attachment's loaded byte; the port keeps g
+    loaded = false;
+    if (anim) anim->visible = false;                 // +0x70 +0x7c
+}
+
 // 0x42efb0
 void Sprite3D::setAnim(const char *p) {
     if (strcasecmp(prefix.c_str(), p) == 0) return;

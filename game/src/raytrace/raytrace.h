@@ -104,6 +104,7 @@ struct Sprite3D {
     Sprite3D(const char *name, const char *prefix, int hit);   // 0x42e990
     ~Sprite3D();
     void load();                                    // 0x42ef20
+    void unload();                                  // 0x42f2b0: its animations' and attachments' frames dropped
     void setAnim(const char *prefix);               // 0x42efb0: switch to the animation <prefix> (made on first use)
     void place();                                   // 0x42f7f0: y = half the frames' average height
     void setPos(float px, float py, float pz) { x = px; y = py; z = pz; }   // 0x42f740 (0x42f700 reads them)

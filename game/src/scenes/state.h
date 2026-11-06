@@ -58,7 +58,7 @@ public:
     bool hasTreasure(bool *out);                     // 0x4eae10 ("Has Treasure")
     bool hasCap();                                   // 0x4e9af0: all fifteen games' "Info" 2
     bool hasPetersCap() { bool b = false; return flag(cur, "Has Peter's Cap", &b) && b; }   // 0x4ead40
-    void setPetersCap(bool v) { cur->set(kSection, "Has Peter's Cap", v ? "true" : ""); }   // 0x4eacf0
+    void setPetersCap(bool v) { cur->set("Tinkerbell Globals", "Has Peter's Cap", v ? "true" : ""); }   // 0x4eacf0
     bool hasXSpotSet() { bool b = false; return flag(cur, "Has X Spot", &b) && b; }          // 0x4ead80
     std::vector<TokenRecord> tokens(const char *section);   // 0x4e9e40 (empty when the section is)
     void setTokens(const char *section, const std::vector<TokenRecord> &v);   // 0x4ea1b0 (the first five)
@@ -106,6 +106,7 @@ struct State {
     TokenInfo lost[5];                               // +0x1728 (states at +0x172c)
     void loadLostTokens();                           // 0x4ee860: from the save, or hidden and handed out anew
     void saveLostTokens();                           // 0x4eec40
+    void lostDone() { for (TokenInfo &t : lost) t.state = 5; saveLostTokens(); saves.flush(); }   // 0x4eef80
     bool anyLost(int v) const { for (const TokenInfo &t : lost) if (t.state == v) return true; return false; }   // 0x4eef20 (5)
     bool allLost(int v) const { for (const TokenInfo &t : lost) if (t.state != v) return false; return true; }   // 0x4eef50 (4)
     bool hover_up = false, hover_down = false;       // +0x75 +0x76: the 3D eye rises to 200 / stays

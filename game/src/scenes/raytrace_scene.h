@@ -4,6 +4,8 @@
 // Work in progress: TinkerbellRaytraceScene (0x516380, Tink, the toolbar) and London_Scene's own run are not in
 // yet; London is entered as a plain Raytrace_Scene for now.
 #pragma once
+#include "../raytrace/character.h"
+#include <vector>
 #include "../vision/engine.h"
 #include "../raytrace/raytrace.h"
 #include "../vision/faderect.h"
@@ -121,6 +123,7 @@ public:
     void forceNone() override;                       // v23 0x4abf30
     void forceOff() override;                        // v24 0x4abf50
     virtual void hover();                            // v32 0x443820: the eye eases down (or up to 200)
+    void charCursor();                               // 0x4abda0: the hand over one of `chars`
     void tinkHome();                                 // 0x4abb10: Tink (no wandering) flies to the state's +0x7ac
     void unforce() { forced_off = false; }           // v34 0x4abf70
     void allowUpDown() { force[4] = force[5] = 0; }  // 0x4aa9b0 (Raytrace_Scene's)
@@ -135,6 +138,8 @@ public:
     uint32_t last_hover = 0;                         // +0x2754
     Vision::Ras *tinkpack = nullptr, *global3d = nullptr;   // +0x17d0 +0x17d4
     bool forced_off = false;                         // +0x17c8: the last of v23 / v24 was v24
+    std::vector<Raytrace::RayTraceCharacter *> chars;   // +0x2820: the scene's characters (the cursor's 0x4abda0)
+    bool leaving = false;                            // +0x2831: set by a scene's run on its way out (read by others)
     bool busy = false;                               // +0x28e0: a scene's intro runs (London: the fade-in)
     Vision::FadeRect dim;                            // +0x2838: full screen, depth -1000
     Raytrace::Sprite3D *cloud1 = nullptr, *cloud2 = nullptr;   // +0x2748 +0x274c (the same sprite)
