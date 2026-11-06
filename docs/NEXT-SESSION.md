@@ -1,5 +1,20 @@
 # Next session
 
+## Latest (Nov 6, the Lost Boys' hideout, ~60%)
+- game/src/scenes/lost_scene.cpp: Lost_Scene (0x43e5b0, "lost"): load2/enter/leave, run (arrival, welcome, the
+  mud pie end, sign games, bucket end with Peter's map prompt or cap), mouse (bell help, map, signs, dust on hiding
+  places, pieces on the ground, flag tags, bucket throws, character clicks), keys (Escape ends a game), cursor.
+  Tink's "lost" help (0x4de970 branch) and the hidden-piece help (0x4de8d0) live there.
+- bucket.* (Bucket Toss), pirateflag.* (Pirate Flag Tag), peter_reward.* (PeterCapReward 0x4bf280, PeterPrompt
+  0x4bfea0), ambient.*, tokens.*, mappiece.*, area_events.* (shared by the five areas).
+- RayTrace: pickAttached 0x42c950, hitAttached 0x42ca00, findAttached 0x42dd00, stickerPos 0x42dd90, hide/show
+  stickers, Sprite3D::unload 0x42f2b0. Saves::hasCap 0x4e9af0 (all 15 games' Info 2). TRS: chars (+0x2820) and
+  the hand cursor 0x4abda0, leaving (+0x2831).
+- Tested: `tinkerbell lost` starts, arrives, Cubby/skunk at their signs, walking; ASan clean. Not yet played
+  through: the bucket and flag games, the hidden pieces (need a signed-in save; Escape in London quits the
+  headless run, so `tinkerbell lost` without a sign-in has no hidden pieces).
+- Next: play-test the two games and the pieces; then "mudpie" (the third Lost Boys game), then the other areas.
+
 ## Latest (Oct 28, 23:30, the map tutorial, ~57%)
 - game/src/scenes/map.*: Map_Scene_Base (0x4a5b90: the map screen, 12 buttons (Button@MapScene), the five
   areas' token displays, the treasure map mode, the credits roll (Credits), the music) and MapTutorial_Scene
