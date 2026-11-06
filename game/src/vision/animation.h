@@ -29,6 +29,7 @@ public:
     void start();                                    // 0x4e3190: frame 0 and the clock
     void forward();                                  // 0x4e31b0: dir = 1 keeping the frame
     void reverse();                                  // 0x4e3220: dir = -1 keeping the frame
+    void play(uint32_t delay, int m) { start_time = frame_time() + delay; mode = m; }   // 0x403be0
     void stop() { start_time = 0; }                  // port: a clean stop (the exe sets +0x10c = 0 where it needs one)
 
     std::string prefix;                              // the name the frames are found by

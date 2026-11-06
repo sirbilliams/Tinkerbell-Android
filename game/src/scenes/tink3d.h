@@ -75,6 +75,16 @@ public:
     bool turnToward(float deg);                      // 0x4dc3d0: up to 15 degrees; true when within 10
     bool idle() const { return queue.empty(); }      // 0x4de010 (on +0x50): no command left
     void wave();                                     // 0x4dbd90: a Tinkerbell3DCommandWave ("GLOB_CA_TNKwave_")
+    void clearQueue();                               // 0x4ddf30 (on +0x50): every command deleted
+    void beckon();                                   // 0x4dbb50: "GLOB_CA_TNKbeckon_"
+    void hiya();                                     // 0x4dbe60: the wave with "GLOB_FX_TNKhiya1" (vtable 0x517644)
+    void guideTo(Raytrace::Sprite3D *s);             // 0x4dc250: in front of the camera, beckon, fly over (or
+                                                     // under) the sprite, wait for the player, point at it
+    void toMap();                                    // 0x4db5b0: off to the left, point down (at the map icon)
+    void noHelp();                                   // 0x4dc1d0: in front of the camera, the hiya wave
+    void ahead(float *x, float *z, float d);         // 0x4da8f0: d in front of the camera
+    // 0x4da950: (x, z) moved r along `deg` (degrees)
+    static void polar(float x, float z, float *ox, float *oz, float deg, float r);
     void say(const char *line);                      // 0x4cca20: plays a voice line (or her sound) as no one
     void moreDust();                                 // 0x4db1a0: new dust along the way flown
     bool wanders = true;                             // +0x13c

@@ -47,6 +47,20 @@ public:
     Raytrace_Scene *scene;                          // +0xc0
 };
 
+// The scene's fade (vtable 0x516258, 0x158 bytes, ctor 0x4a9410, dtor 0x4a9500, start 0x4a9580, busy 0x4a95c0,
+// draw v14 0x4a95d0): a full-screen darkening over `ms`, to black (in = false) or back.
+class SceneFader : public Vision::Graphic {
+public:
+    SceneFader();                                    // 0x4a9410 (hidden)
+    void start(bool in, uint32_t ms);                // 0x4a9580
+    bool busy() const { return running; }           // 0x4a95c0
+    void draw() override;                            // v14 0x4a95d0
+    bool running = false;                            // +0x98
+    Vision::FadeRect rect;                           // +0xa0 (640x480)
+    uint32_t t0 = 0, ms = 0;                         // +0x148 +0x14c
+    bool in = false;                                 // +0x150
+};
+
 class Raytrace_Scene : public Vision::Scene {
 public:
     explicit Raytrace_Scene(const char *name);       // 0x4a9d.. (ctor ~0x4aa240)
@@ -68,6 +82,7 @@ public:
 
     Raytrace::RayTrace rt;                           // +0x140
     Vision::Ras *walls = nullptr, *sprites = nullptr, *ground = nullptr;   // +0x130 +0x134 (+0x4e8 of rt)
+    SceneFader *fader = nullptr;                     // +0x124 (made by open, on over2)
     MovementInputTask *input = nullptr;              // +0x12c
     float cam_x = 3000.1f, cam_eye = 0.1f, cam_z = 3000.1f, cam_deg = 90.1f;   // +0xcc..+0xd8
     uint32_t opened = 0, active_time = 0;            // +0xdc
@@ -106,6 +121,7 @@ public:
     void forceNone() override;                       // v23 0x4abf30
     void forceOff() override;                        // v24 0x4abf50
     virtual void hover();                            // v32 0x443820: the eye eases down (or up to 200)
+    void tinkHome();                                 // 0x4abb10: Tink (no wandering) flies to the state's +0x7ac
     void unforce() { forced_off = false; }           // v34 0x4abf70
     void allowUpDown() { force[4] = force[5] = 0; }  // 0x4aa9b0 (Raytrace_Scene's)
     bool flyThroughClouds(bool second);              // 0x4ab920: up through the cloud bank; true while flying

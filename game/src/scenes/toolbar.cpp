@@ -255,8 +255,7 @@ void PixieDustBag::sprinkle(Raytrace::RayTrace *rt, Sprite3D **sprite, Raytrace:
     float keep = rt->pick_max;                       // +0x1170
     rt->pick_max = FLT_MAX;                          // 0x7f7fffff
     *sprite = rt->pick(g_mouse.x, g_mouse.y);        // 0x42c710
-    // port: 0x42c950 (the attachment under the mouse, any distance) is not ported yet; no scene so far uses it
-    *att = nullptr;
+    *att = rt->pickAttached(g_mouse.x, g_mouse.y, false);   // 0x42c950
     rt->pick_max = keep;
     if (st.dusting) {
         st.throwdust->close();                       // +0x7c

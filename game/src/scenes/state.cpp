@@ -1,4 +1,5 @@
 #include "state.h"
+#include "../raytrace/raytrace.h"
 #include "../vision/engine.h"
 #include "../vision/animation.h"
 #include "voiceover.h"
@@ -18,7 +19,7 @@ State &state() { static State s; return s; }
 
 // 0x4ebad0 (the state's +0x13a0): the camera spots {x, eye, z, degrees} of the 3D areas, five per area (as their
 // float bit patterns; the unset ones are 0). London is area 0.
-static const uint32_t kSpots[30][4] = {
+static uint32_t kSpots[30][4] = {   // (spot 4 of each area set by 0x4ec0e0)
     {0x4547b75cu, 0x3dcccccdu, 0x45155971u, 0x430a4ccdu},   // [0][0]
     {0x4547b75cu, 0x3dcccccdu, 0x45155971u, 0x430a4ccdu},   // [0][1]
     {0x00000000u, 0x00000000u, 0x00000000u, 0x00000000u},   // [0][2]
@@ -52,6 +53,15 @@ static const uint32_t kSpots[30][4] = {
 };
 void State::cameraSpot(int area, int spot, float out[4]) const {   // 0x4ec180
     memcpy(out, kSpots[area * 5 + spot], 16);
+}
+void State::setSpot4(int area, const float sp[4]) {   // 0x4ec0e0: the area's spot 4, made current
+    memcpy(kSpots[area * 5 + 4], sp, 16);
+    cur_spot[area] = 4;                              // +0x1e0
+}
+void State::setCameraToSpot(int area, int spot, Raytrace::RayTrace *rt) const {   // 0x4ec140
+    float sp[4];
+    cameraSpot(area, spot, sp);
+    rt->setCamera(sp[0], sp[1], sp[2], sp[3]);       // 0x42a570
 }
 bool State::vo_busy() const { return Vision::VoiceOver::get().busy(); }
 
@@ -132,7 +142,18 @@ void Saves::setTutorialsPassed(bool v) {                 // 0x4ea570
 
 bool Saves::hasTreasure(bool *out) { return flag(cur, "Has Treasure", out); }   // 0x4eae10
 
-bool Saves::hasCap() { return false; }
+// 0x4e9af0: every one of the fifteen mini games won twice ("Info" 2 in each game's section; 0x4e96d0 each).
+bool Saves::hasCap() {
+    static const char *const games[15] = {           // *0x5434fc..*0x543534
+        "Bird Spy Game", "Color The Cloud Game", "Cloud Burst Game", "Backwards Go Game", "Pearl Toss Game",
+        "Shell Game", "Shadow Boxing Game", "Echo Echo Game", "Firefly Game", "Mud Pie Game",
+        "Coconuts Away Game", "Flying Hoops Game", "Totem Trail Game", "Pirate Flag Tag Game", "Bucket Toss Game"};
+    for (const char *g : games) {
+        const std::string *v = cur->get(g, "Info");
+        if (!v || atoi(v->c_str()) != 2) return false;
+    }
+    return true;
+}
 
 bool Saves::mapSegment(const char *area) {           // 0x4ea870 & co: *0x543538 "Map Segment"
     return cur->get(std::string(area) + " Treasure Map", "Map Segment") != nullptr;
@@ -159,7 +180,7 @@ bool Saves::allMapSegments() {                       // 0x4eaa70
 int Saves::gameInfo(const char *game) {                  // 0x4e9d70
     const std::string *v = cur->get(game, "Info");      // *0x5434e4
     return v ? atoi(v->c_str()) : 0;
-}                   // 0x4e9af0 (port: TODO with the area progress)
+}
 
 }  // namespace Game
 
@@ -231,6 +252,56 @@ void HidingPlaces::load(const char *area) {
         for (const Vision::Database::Entry &h : e.children) { P p; read(h, p); hard.insert(hard.begin(), p); }
         break;
     }
+}
+
+void State::Firsts::welcome() {                      // 0x4c64d0
+    State &st = state();
+    if (st.last_game == 2 || st.last_game == 5) return;
+    Vision::Scene *sc = Vision::current_scene();     // 0x5a7394
+    std::string n = sc ? sc->name() : "";
+    if (n == "map") return;
+    struct A { const char *scene, *seg, *first, *seg_won, *other; };
+    static const A areas[5] = {                      // 0x631750.., 0x542538..0x542570
+        {"Mermaid", "Mermaid", "MCOV_VO_PETenter1", "MCOV_VO_PETenter2", "MCOV_VO_PETremind"},
+        {"Indian_Village", "Village", "INDV_VO_PETenter1", "INDV_VO_PETenter2", "INDV_VO_PETremind"},
+        {"skull", "Skull", "SKLR_VO_PETenter1", "SKLR_VO_PETenter2", "SKLR_VO_PETremind"},
+        {"lost", "Lost", "LOST_VO_PETenter1", "LOST_VO_PETenter2", "LOST_VO_PETremind"},
+        {"starry", "Starry", "STAR_VO_PETenter1", "STAR_VO_PETenter2", "STAR_VO_PETremind"},
+    };
+    bool found = false;
+    for (int i = 0; i < 5; i++) {
+        if (n != areas[i].scene) continue;
+        if (b[i]) { line = areas[i].first; b[i] = 0; }
+        else line = st.saves.mapSegment(areas[i].seg) ? areas[i].seg_won : areas[i].other;
+        found = true;
+        break;
+    }
+    if (!found && n == "demo") return;
+    Vision::VoiceOver::get().play(line.c_str());             // 0x4c9400
+}
+
+bool State::Firsts::welcoming() { return Vision::VoiceOver::get().isPlaying(line.c_str()); }   // 0x4c6930
+
+bool hiding_sprite(const std::string &area, Raytrace::Sprite3D *s) {   // 0x4e6850
+    Vision::Database db("hiding_places", "dat", "");
+    db.load();
+    Vision::Database::Section *sec = db.section(area, true);
+    for (const Vision::Database::Entry &e : sec->entries) {
+        if (e.key != "hidingSprites") continue;      // 0x424f90 (the first one)
+        for (const Vision::Database::Entry &h : e.children)
+            if (h.key == s->anim->name()) return true;   // 0x4243f0, 0x423840
+        return false;
+    }
+    return false;
+}
+
+bool hides_near(float x, float z, Raytrace::Sprite3D *s) {   // 0x4e69f0
+    Vision::Database db("hiding_places", "dat", "");
+    db.load();
+    const std::string *v = db.get("global", "hiding_radius");
+    float r = (float)atof(v ? v->c_str() : "");      // 0x4f595c
+    double dx = (double)s->x - x, dz = (double)s->z - z;
+    return (double)r * r > dx * dx + dz * dz;
 }
 
 // 0x4f1510, MSVC's random_shuffle: each element from the second swapped with one at or before it.

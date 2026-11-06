@@ -6,6 +6,7 @@
 #include <vector>
 #include <cstdint>
 namespace Vision { class Graphic; class Ras; class Sound; }
+namespace Raytrace { struct Sprite3D; class RayTrace; }
 
 namespace Game {
 
@@ -19,6 +20,7 @@ struct TokenInfo {
     void setPos(float px, float py, float pz) { x = px; y = py; z = pz; }   // v1 0x4ed200
     void setHard() { easy = false; }                 // v2 0x4ed240
     void setEasy() { easy = true; }                  // v3 0x4ed250
+    bool hidden() const { return state == 1 && !easy; }   // 0x4ed1c0: hidden in a hard place
 };
 // A saved piece (0x14 bytes): keys "location<n>", "active<n>", "x<n>", "y<n>", "z<n>" in "<Area> Tokens".
 struct TokenRecord { int state = 0; bool easy = false; float x = 0, y = 0, z = 0; };
@@ -34,6 +36,10 @@ struct HidingPlaces {
     bool shuffled = false;                           // +0x20
     int given = 0;                                   // +0x24
 };
+// hiding_places.dat read again on each call (the exe's cached database):
+bool hiding_sprite(const std::string &area, Raytrace::Sprite3D *s);   // 0x4e6850: its animation is one of the
+                                                                      // area's "hidingSprites"
+bool hides_near(float x, float z, Raytrace::Sprite3D *s);   // 0x4e69f0: (x, z) within [global] hiding_radius of it
 
 // state+0x3cc (0x4e9530): the save databases. `cur` = the player's save (Save\save<N>.txt; "save5" at start),
 // `globals` = Save\Globals.txt. Section "Tinkerbell Globals" (*0x5434cc), folder "Save" (*0x5434d8), ext "txt".
@@ -50,7 +56,10 @@ public:
     bool tutorialsPassed(bool *out);                 // 0x4ea4f0 (globals: "Tutorials Passed")
     void setTutorialsPassed(bool v);                 // 0x4ea570 ("true" / "")
     bool hasTreasure(bool *out);                     // 0x4eae10 ("Has Treasure")
-    bool hasCap();                                   // 0x4e9af0 (port: TODO, reads every area's progress)
+    bool hasCap();                                   // 0x4e9af0: all fifteen games' "Info" 2
+    bool hasPetersCap() { bool b = false; return flag(cur, "Has Peter's Cap", &b) && b; }   // 0x4ead40
+    void setPetersCap(bool v) { cur->set(kSection, "Has Peter's Cap", v ? "true" : ""); }   // 0x4eacf0
+    bool hasXSpotSet() { bool b = false; return flag(cur, "Has X Spot", &b) && b; }          // 0x4ead80
     std::vector<TokenRecord> tokens(const char *section);   // 0x4e9e40 (empty when the section is)
     void setTokens(const char *section, const std::vector<TokenRecord> &v);   // 0x4ea1b0 (the first five)
     void setGameInfo(const char *game, int v);       // 0x4e9db0: the game's section, "Info"
@@ -82,6 +91,9 @@ struct State {
     bool dusting = false;                            // +0x3c4: the pixie dust is on the cursor
     int dust = 0;                                    // +0x3c8: the pixie dust in the bag (0..50)
     int last_game = 0, last_result = 0;             // +0x79c +0x7a0: the last mini game played and how it ended
+    bool flag_ended = false;                         // +0x7a6: the pirate flag game ended (an EndOfGame to run)
+    float tink_home[3] = {};                         // +0x7ac..+0x7b4 (0x4e63b0 on +0x78c): where Tink waits
+    void setTinkHome(float x, float y, float z) { tink_home[0] = x; tink_home[1] = y; tink_home[2] = z; }
     bool tutorial_skipped = false;                   // +0x7bc: Escape in the Lost Boys' tutorial
     int cur_spot[6] = {};                            // +0x1580 (+0x13a0 + 0x1e0): each area's camera spot
     void areaSpot(int area, float out[4]) const { cameraSpot(area, cur_spot[area], out); }   // 0x4ec0a0
@@ -101,7 +113,9 @@ struct State {
     Saves saves;                                     // +0x3cc
     // +0x560: a voice line is playing (the byte is the VoiceOver member's +0x178 flag, the VoiceOver being at +0x3e8)
     bool vo_busy() const;
-    void cameraSpot(int area, int spot, float out[4]) const;   // 0x4ec180 (0x4ec140 sets the camera there)
+    void cameraSpot(int area, int spot, float out[4]) const;   // 0x4ec180
+    void setCameraToSpot(int area, int spot, Raytrace::RayTrace *rt) const;   // 0x4ec140
+    void setSpot4(int area, const float sp[4]);      // 0x4ec0e0
     char skip_key = 0x1b;                            // +0x74: Escape (0x51 'Q' when 0x5a7579 is set)
     bool start_in_london = false;                    // +0x1818 (Big Ben chosen in the sign-in room)
     bool returning = false;                          // +0x1819 (back in the sign-in room: "WENgreet3")
@@ -113,6 +127,10 @@ struct State {
         void reset() { for (int i = 0; i < 0x28; i++) b[i] = i < 0x19; }   // 0x4c6450
         bool take(int i) { bool v = b[i]; b[i] = 0; return v; }           // 0x4c6c50.. (+0xa..+0x18)
         bool mark(int i) { bool v = b[i]; b[i] = 1; return v; }           // 0x4c6d30.. (+0x19..)
+        // 0x4c64d0: entering an area (not after its game 2 or an escape, not on the map), Peter's line: the
+        // first visit's (once), or the reminder until its map segment is won, then the other welcome.
+        void welcome();
+        bool welcoming();                            // 0x4c6930: that line still plays
         uint8_t b[0x28];
         std::string line;                            // +0x28
     };

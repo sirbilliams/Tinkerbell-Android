@@ -161,7 +161,8 @@ void Raytrace_Scene::open(const char *nm) {
     forceNone();                                     // +0xe0..+0xf4 cleared
     mouse.activate();                                // +0x1328, +0x12f4 (port: the joystick +0x12c0 is the pad,
     keys.activate();                                 // read as keys by platform/dinput)
-    // port: the 0x158-byte graphic 0x4a9410 (+0x124) is not ported yet.
+    fader = new SceneFader();                        // 0x4a9410
+    over2.layer(0)->add(fader);                      // 0x41ece0, 0x41e930
     initPhysics();                                   // v28
     input = new MovementInputTask(this);             // +0x12c
     input->activate();
@@ -464,6 +465,13 @@ bool TinkerbellRaytraceScene::stateKeys() {
     return false;
 }
 
+void TinkerbellRaytraceScene::tinkHome() {          // 0x4abb10
+    tink->wanders = false;                           // +0x13c
+    const float *h = Game::state().tink_home;
+    tink->pushBasic(2, h[0], h[1], h[2]);            // 0x4de020
+    tink->pushBasic(0, 0, 0, 0);
+}
+
 void TinkerbellRaytraceScene::forceNone() { Raytrace_Scene::forceNone(); forced_off = false; }   // v23 0x4abf30
 void TinkerbellRaytraceScene::forceOff() { Raytrace_Scene::forceOff(); forced_off = true; }      // v24 0x4abf50
 
@@ -542,7 +550,41 @@ void Raytrace_Scene::leave() {                       // v20 0x4aa110
     over2.clear();
     over2.deactivate();
     over2.unloadAll();
+    delete fader;                                    // v3(1)
+    fader = nullptr;
     deactivate();
+}
+
+SceneFader::SceneFader() : Graphic(0, 0, 0, 0, 0, 0, true, 0xff000000u, 0, 0, 0, -1, 0xffff00ffu) {   // 0x4a9410
+    rect.w = 640;                                    // +0x104
+    rect.h = 480;                                    // +0x108
+    rect.z = 0; rect.oz = 0;                         // 0x411e70(0)
+    running = false;
+    visible = false;                                 // +0x7c
+}
+
+void SceneFader::start(bool i, uint32_t m) {         // 0x4a9580
+    in = i;
+    running = true;
+    t0 = frame_time();
+    ms = m;
+    visible = true;
+}
+
+// 0x4a95d0: the darkness's level by the time gone (back to 1 or down to 0 when done; it stays drawn).
+void SceneFader::draw() {
+    uint32_t e = frame_time() - t0;
+    float lv;
+    if (e >= ms) {
+        lv = in ? 1.0f : 0.0f;
+        running = false;
+    } else if (in) {
+        lv = (float)((double)e / (double)ms);
+    } else {
+        lv = (float)(1.0f - (double)e / (double)ms);
+    }
+    rect.setLevel(lv);                               // 0x415f20
+    rect.draw();                                     // v14
 }
 
 }  // namespace Game

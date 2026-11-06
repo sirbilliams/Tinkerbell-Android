@@ -13,6 +13,7 @@ using Raytrace::Sprite3D;
 
 static const char *const kRoot = "GLOB_CA_TNKroot_";  // 0x54294c
 static const float kDeg = 57.29582595825195f;       // 0x5144f4
+static const float kPi = 3.14159274f;                // 0x517544
 static int g_command_id = 0;                         // 0x542928
 
 static int rnd(int n) { return Vision::vision_random(n); }   // (state +8)->0x425d40
@@ -297,6 +298,71 @@ void Tinkerbell3D::init() {                          // v1 0x4da790
 
 void Tinkerbell3D::wave() { push(new TinkCmdAnimation("GLOB_CA_TNKwave_", nullptr)); }   // 0x4dbd90
 void Tinkerbell3D::say(const char *line) { Vision::VoiceOver::get().play(line); }        // 0x4cca20 -> 0x4c9400
+
+void Tinkerbell3D::clearQueue() {                   // 0x4ddf30
+    for (TinkCommand *c : queue) delete c;           // v0(1)
+    queue.clear();
+}
+
+void Tinkerbell3D::beckon() { push(new TinkCmdAnimation("GLOB_CA_TNKbeckon_", nullptr)); }   // 0x4dbb50
+void Tinkerbell3D::hiya() { push(new TinkCmdAnimation("GLOB_CA_TNKwave_", "GLOB_FX_TNKhiya1")); }   // 0x4dbe60
+
+// 0x4dc250: a tall sprite (its middle-frame half height above y over 400) whose foot is above 600 is pointed at
+// from below; otherwise from above (200 over its top, pointing 100 over it).
+void Tinkerbell3D::guideTo(Sprite3D *s) {
+    double half = (double)s->anim->h * 0.5f;         // anim +0x68 (int), 0x513298
+    float top = (float)(half + s->y);
+    float ty, py;
+    if (!((double)top < 400.0f)) {                   // 0x514f04
+        double bottom = (double)s->y - half;
+        if (bottom > 600.0f) {                       // 0x515a40
+            ty = (float)(bottom - 200.0f);           // 0x514340
+            py = (float)((double)ty + 100.0f);       // 0x513da0
+            goto go;
+        }
+    }
+    ty = (float)((double)top + 200.0f);
+    py = (float)((double)ty - 100.0f);
+go:
+    float sx = s->x, sz = s->z;
+    float cx = (float)(rt->camx + cos(rt->angf) * 300.0);   // 0x5144b8
+    float cz = (float)(rt->camz + sin(rt->angf) * 300.0);
+    float cy = (float)((double)rt->eyef + 450.0f);   // 0x42b480 (+0xac), 0x5142ec
+    pushBasic(2, cx, cy, cz);
+    beckon();
+    pushBasic(2, sx, ty, sz);
+    pushBasic(3, 400.0f, 10000.0f, 0);
+    point(sx, py, sz);
+}
+
+void Tinkerbell3D::ahead(float *x, float *z, float d) {   // 0x4da8f0 (0x42b550 the view in radians)
+    *x = (float)(cos((double)rt->angf) * d + rt->camx);
+    *z = (float)(sin((double)rt->angf) * d + rt->camz);
+}
+
+void Tinkerbell3D::polar(float x, float z, float *ox, float *oz, float deg, float r) {   // 0x4da950
+    double a = (double)deg * 0.0174532924f;          // 0x517564
+    *ox = (float)(cos(a) * r + x);
+    *oz = (float)(sin(a) * r + z);
+}
+
+// 0x4db5b0: 25 degrees left of the view, 250 out, 300 up; pointing down to 25.
+void Tinkerbell3D::toMap() {
+    float a = (float)((double)rt->angf - (double)(kPi * 0.138889f));   // 0x517544, 0x5175ec
+    float x = (float)((double)rt->camx + cos(a) * 250.0);   // 0x5144a0
+    float z = (float)((double)rt->camz + sin(a) * 250.0);
+    pushBasic(2, x, 300.0f, z);
+    point(x, 25.0f, z);
+}
+
+// 0x4dc1d0: as far in front as the eye is high, at that height; then the wave.
+void Tinkerbell3D::noHelp() {
+    float e = (float)rt->eyeWorld();                 // 0x42b520
+    float x = (float)((double)rt->camx + cos(rt->angf) * e);
+    float z = (float)((double)rt->camz + sin(rt->angf) * e);
+    pushBasic(2, x, e, z);
+    hiya();
+}
 
 void Tinkerbell3D::release() {                       // v2 0x4da8b0
     RayTraceCharacter::release();

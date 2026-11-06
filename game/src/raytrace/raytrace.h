@@ -110,6 +110,9 @@ struct Sprite3D {
     Attachment *findAttached(const char *n);        // 0x42f350
     Attachment *attach(const char *n, const char *prefix, int gz);   // 0x42f390: nullptr when the name is taken
     void detach(const char *n);                     // 0x42f560: unlinked and deleted ("Could not remove sticker")
+    void preload(const char *prefix);               // 0x42edd0: another animation into the list (loaded with it)
+    void hideAttached(const char *n);               // 0x42f620: off ("Could not hide sticker")
+    void showAttached(const char *n);               // 0x42f690: on ("Could not show sticker")
     bool loaded = false;                            // +0x00
     std::vector<std::pair<std::string, Vision::Animation *>> anims;   // +0x04: by name (the main one first)
     float dist = 0;                                 // +0x14
@@ -176,6 +179,11 @@ public:
     void makeBox(Sprite3D *s, bool flag);           // 0x429580 -> 0x429380
     void refreshBox(const char *name, Sprite3D *s); // 0x4294b0: the box `name` moved with the sprite
     bool cameraInBox(Sprite3D *s);                  // 0x429710: the sprite's box (refreshed) holds the camera
+    bool pointInBox(float x, float z);              // 0x429920: (x, z) inside a box's floor rectangle
+    bool cameraNear(float x, float z, float r);     // 0x4298e0: the camera closer than r to (x, z)
+    bool boxHits(Sprite3D *s);                      // 0x429830: the sprite's box (refreshed) meets another box
+    Box *overlapping(Box *b);                       // 0x42c610: the first other box sharing heights and close
+                                                    // enough (centres within a tenth of their sizes' sum)
     static void setMaxEye(int v);                   // 0x42b110 (0x535a28: how high the camera may rise)
     static void resetMaxEye();                      // 0x42b120: 450
     static int maxEye();
@@ -200,6 +208,12 @@ public:
     // the scene scripts' helpers
     Sprite3D *pick(int x, int y);                   // 0x42c710: the nearest shown sprite under (x, y) within pick_max
     bool hitSprite(Sprite3D *s, int x, int y);      // 0x42c7b0
+    // 0x42ca00: the sprite's attachment (shown ones, or all with `any`) under (x, y), the nearest (lowest z)
+    Attachment *hitAttached(Sprite3D *s, int x, int y, bool any);
+    // 0x42c950: the attachment under (x, y) on the nearest sprite (within pick_max) that has one there
+    Attachment *pickAttached(int x, int y, bool any);
+    Attachment *findAttached(const char *n);        // 0x42dd00: the first sprite's attachment of that name
+    bool stickerPos(const char *n, float out[3]);   // 0x42dd90: its place in the world (0s and a log if none)
     double angleDeg() const;                        // 0x42b560: the view direction in degrees (x87 value)
     void camPos(float out[3]) const { out[0] = camx; out[1] = eyef; out[2] = camz; }   // 0x42b490
     double spriteDist(const Sprite3D *s) const;     // 0x42e3d0: the sprite's floor distance from the camera

@@ -13,6 +13,11 @@
 #include "tutorial_char.h"
 #include "../raytrace/mover.h"
 #include "../vision/sound.h"
+#include "scene_char.h"
+#include "area_events.h"
+#include "mappiece.h"
+#include "tokens.h"
+#include "ambient.h"
 
 namespace Game {
 
@@ -70,5 +75,73 @@ public:
     bool bell_clicked = false;                       // +0x555f
     bool map_clicked = false;                        // +0x5560
 };
+
+class PirateFlagGame;
+class BucketGame;
+class BucketCursor;
+class PeterCapReward;
+class PeterPrompt;
+
+// The hideout proper (Lost_Scene@LostScene, vtable 0x514258, ctor 0x43e5b0, the static at 0x5ac4f8): the raccoon
+// twins at their bucket tree, Cubby at the pirate flag sign, the skunk at the mud pie sign; the bucket toss and
+// pirate flag tag games played here, mud pie in its own scene. Hidden puzzle pieces lie about, found by
+// sprinkling dust on their hiding places.
+//   load2 v18 0x43eb40, enter v19 0x440520, leave v20 0x440d50, onMouse v25 0x440fa0, onKey v26 0x441990,
+//   run v10 0x441a60, cursorUpdate v30 0x442550; flagHint 0x441860, groundTokens 0x4426f0, pickPiece 0x442a70,
+//   signsOn 0x442db0, hotOn 0x442dd0, refreshTokens 0x442e00.
+class Lost_Scene : public Lost_Scene_Base {
+public:
+    Lost_Scene();                                    // 0x43e5b0 ("lost")
+    ~Lost_Scene() override;
+    void load2() override;                           // v18 0x43eb40
+    void enter() override;                           // v19 0x440520
+    void leave() override;                           // v20 0x440d50
+    void run() override;                             // v10 0x441a60
+    void onMouse() override;                         // v25 0x440fa0
+    bool onKey() override;                           // v26 0x441990
+    Vision::Graphic *cursorUpdate() override;        // v30 0x442550
+    void flagHint();                                 // 0x441860: Tink shows the nearest free ghost
+    void groundTokens();                             // 0x4426f0: the hidden pieces' sprites
+    bool pickPiece(Raytrace::Sprite3D *s);           // 0x442a70: a piece on the ground clicked
+    void signsOn(bool on);                           // 0x442db0
+    void hotOn(bool on);                             // 0x442dd0
+    void refreshTokens();                            // 0x442e00
+    void interactive();                              // (inlined): inactivity started, hot regions and signs on
+    bool tinkHelp();                                 // 0x4de970's "lost" branch (state +0x181c)
+
+    bool stay = false;                               // +0x3358: run's loop goes on
+    AmbientSpriteTask ambient;                       // +0x335c
+    PirateFlagGame *flag = nullptr;                  // +0x3434
+    int flag_bits = 0;                               // +0x3438
+    bool flag_on = false;                            // +0x343c (0x5af934)
+    BucketGame *bucket = nullptr;                    // +0x3440
+    BucketCursor *bcursor = nullptr;                 // +0x3444 (0x5af93c)
+    int hits = 0;                                    // +0x3448 (0x5af940): buckets hit this game
+    int bucket_bits = 0;                             // +0x344c (0x5af944)
+    bool bucket_on = false;                          // +0x3450 (0x5af948)
+    BucketMapPiece mappiece;                         // +0x3454
+    EndOfGame flag_end, mud_end;                     // +0x3534 (Cubby's) +0x364c (the skunk's)
+    EndOfPuzzleGame bucket_end;                      // +0x3764
+    SignClick buck_sign, pirt_sign, mudp_sign;       // +0x3868 +0x39ac +0x3af0
+    HotRegion *buck_hot = nullptr, *pirt_hot = nullptr, *mudp_hot = nullptr;   // +0x3c34 +0x3c38 +0x3c3c
+    TokenInterface *tokens = nullptr;                // +0x3c40 (0x5b0138)
+    Vision::Image puzpieces;                         // +0x3c48 "LOST_LY_puzpieces_01"
+    CharacterClick buck_click, pirt_click, mudp_click;   // +0x3cf0 +0x3e70 +0x3ff0
+    Vision::Ras *peter_pack = nullptr;               // +0x4170
+    SceneCharacter peter;                            // +0x4174
+    Vision::Ras *rac_pack = nullptr;                 // +0x4400
+    SceneCharacter raccoon1, raccoon2;               // +0x4404 +0x4690
+    Vision::Ras *cub_pack = nullptr;                 // +0x491c
+    SceneCharacter cubby;                            // +0x4920
+    Vision::Ras *skn_pack = nullptr;                 // +0x4bac
+    SceneCharacter skunk;                            // +0x4bb0
+    Vision::Sound grabpuz;                           // +0x4e3c "buck_fx_grabpuz"
+    SceneInactivity inactivity;                      // +0x5184
+    PeterCapReward *reward = nullptr;                // +0x5318
+    PeterPrompt *prompt = nullptr;                   // +0x531c
+    static std::vector<std::string> win_lines;       // 0x5ac4e8 (appended to by every load2)
+};
+
+Lost_Scene &lost_scene();                            // the static at 0x5ac4f8
 
 }  // namespace Game

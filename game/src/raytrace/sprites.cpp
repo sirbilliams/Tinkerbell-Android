@@ -112,6 +112,11 @@ Attachment *Sprite3D::attach(const char *n, const char *p, int gz) {
     return a;
 }
 
+void Sprite3D::preload(const char *p) {             // 0x42edd0
+    Vision::Animation *a = new Vision::Animation(p);
+    anims.push_back(std::make_pair(std::string(a->name()), a));
+}
+
 void Sprite3D::detach(const char *n) {               // 0x42f560
     Attachment *a = findAttached(n);
     if (!a) { Vision::vision_log("Could not remove sticker %s", n); return; }
@@ -123,6 +128,18 @@ void Sprite3D::detach(const char *n) {               // 0x42f560
         a->prev->next = a->next;
     }
     delete a;                                        // 0x42e430 + free
+}
+
+void Sprite3D::hideAttached(const char *n) {         // 0x42f620
+    Attachment *a = findAttached(n);
+    if (!a) { Vision::vision_log("Could not hide sticker %s", n); return; }
+    a->on = false;
+}
+
+void Sprite3D::showAttached(const char *n) {         // 0x42f690
+    Attachment *a = findAttached(n);
+    if (!a) { Vision::vision_log("Could not show sticker %s", n); return; }
+    a->on = true;
 }
 
 // 0x42da60
@@ -367,6 +384,90 @@ bool RayTrace::hitSprite(Sprite3D *s, int x, int y) {
     return an->hit(x, y);                            // v11
 }
 
+// 0x42ca00: placed as drawSprite would place them (the row kept unrounded), the attachments are tried in their
+// drawing order; the one with the lowest z (from 1e6) that is hit wins.
+Attachment *RayTrace::hitAttached(Sprite3D *s, int x, int y, bool any) {
+    Vision::Animation *an = s->anim;
+    if (!an || !an->visible) return nullptr;
+    if (!(s->dist <= pick_max)) return nullptr;
+    double ang = atan2((double)s->z - camz, (double)s->x - camx);
+    if (ang < 0.0) ang += kTwoPi;
+    int n = (int)angles.size();
+    int col = view - (int)((double)n * ang / kTwoPi) - 320;
+    if (col < -(n / 2)) col += n;
+    else if (col > n / 2) col -= n;
+    if (!(col > -w && col < w)) return nullptr;
+    int idx;
+    if (col < 0) {
+        idx = -(w / 2);
+        if (col >= idx) idx = col;
+        idx += n;
+    } else {
+        idx = w / 2;
+        if (!(col > idx)) idx = col;
+    }
+    double cs = angles[(size_t)idx].dx;
+    double sc = 24000.0f / (double)s->dist * ((double)s->scale * 0.01f) / cs;   // 0x513d18, 0x513d4c
+    double row = ((double)160.0f + eyef) * 590.0f / s->dist / cs - (double)s->y * sc * 0.01;
+    sort_attached(s);
+    Attachment *best = nullptr;
+    float bestz = 1e6f;                              // 0x49742400
+    for (Attachment *a = s->attached; a; a = a->next) {
+        if (!any && !a->on) continue;
+        if (a->frame != -1 && a->frame != an->current()) continue;
+        Vision::Graphic *g = a->g;
+        g->setScale(sc);
+        int gx = g->x, gy = g->y;
+        g->x = (int)((double)gx * sc * 0.01 + col);
+        g->y = (int)((double)gy * sc * 0.01 + row);
+        if ((float)g->z < bestz && g->hit(x, y)) {
+            best = a;
+            bestz = (float)g->z;
+        }
+        g->x = gx;
+        g->y = gy;
+    }
+    return best;
+}
+
+Attachment *RayTrace::pickAttached(int x, int y, bool any) {   // 0x42c950
+    Attachment *best = nullptr;
+    float bestd = 1e7f;                              // 0x4b189680
+    for (Sprite3D *s : sprites) {
+        if (!(s->dist <= pick_max)) continue;
+        if (!(s->dist < bestd)) continue;
+        if (Attachment *a = hitAttached(s, x, y, any)) {
+            best = a;
+            bestd = s->dist;
+        }
+    }
+    return best;
+}
+
+Attachment *RayTrace::findAttached(const char *n) {  // 0x42dd00
+    for (Sprite3D *s : sprites)
+        if (Attachment *a = s->findAttached(n)) return a;
+    return nullptr;
+}
+
+// 0x42dd90 (0x42df30 copies it out): the sprite's heading from the camera turned a quarter, the attachment's
+// offset (negated, scaled as the sprite at 100% would be at distance 240) along it; up by the offset's row.
+bool RayTrace::stickerPos(const char *n, float out[3]) {
+    for (Sprite3D *s : sprites) {
+        Attachment *a = s->findAttached(n);
+        if (!a) continue;
+        double ang = atan2((double)s->z - camz, (double)s->x - camx) + 1.57079637f;   // 0x513dcc
+        double k = (double)s->scale / ((double)24000.0f * 0.01f) * (double)-a->g->x;   // 0x513d18, 0x513d4c
+        out[0] = (float)(cos(ang) * k + s->x);
+        out[1] = (float)(s->y - ((double)-a->g->y - 480.0f) * 0.487804890f);         // 0x513d48, 0x513d44
+        out[2] = (float)(sin(ang) * k + s->z);
+        return true;
+    }
+    Vision::vision_log("Unable to getStickerPosition3D for %s", n);
+    out[0] = out[1] = out[2] = 0;
+    return false;
+}
+
 // 0x42c710
 Sprite3D *RayTrace::pick(int x, int y) {
     Sprite3D *best = nullptr;
@@ -400,6 +501,47 @@ void RayTrace::addBox(const char *n, float minx, float maxx, float y0, float y1,
     b->name = n;
     b->minx = minx; b->maxx = maxx; b->y0 = y0; b->y1 = y1; b->minz = minz; b->maxz = maxz;
     boxes.push_back(b);
+}
+
+}  // namespace Raytrace
+
+namespace Raytrace {
+
+bool RayTrace::pointInBox(float x, float z) {       // 0x429920
+    for (Box *b : boxes)
+        if (!(x < b->minx) && !(x > b->maxx) && !(z < b->minz) && !(z > b->maxz)) return true;
+    return false;
+}
+
+bool RayTrace::cameraNear(float x, float z, float r) {   // 0x4298e0
+    double dx = (double)camx - x, dz = (double)camz - z;
+    return (double)r * r > dx * dx + dz * dz;
+}
+
+// 0x42c610: the radii are a tenth of each box's width plus depth (the exe's sums).
+Box *RayTrace::overlapping(Box *b) {
+    float bx = (float)(((double)b->minx + b->maxx) * 0.5f), bz = (float)(((double)b->minz + b->maxz) * 0.5f);
+    float br = (float)((fabs((double)b->maxx - b->minx) + fabs((double)b->maxz - b->minz)) * 0.1);
+    for (Box *o : boxes) {
+        if (o == b) continue;
+        float ox = (float)(((double)o->minx + o->maxx) * 0.5f), oz = (float)(((double)o->minz + o->maxz) * 0.5f);
+        float orr = (float)((fabs((double)o->maxx - o->minx) + fabs((double)o->maxz - o->minz)) * 0.1);
+        if (b->y0 > o->y1) continue;
+        if (o->y0 > b->y1) continue;
+        double dx = (double)ox - bx, dz = (double)oz - bz, rs = (double)orr + br;
+        if (rs * rs > dx * dx + dz * dz) return o;
+    }
+    return nullptr;
+}
+
+bool RayTrace::boxHits(Sprite3D *s) {                // 0x429830
+    std::string n = s->name + "_box";               // 0x535a2c
+    refreshBox(n.c_str(), s);                        // 0x4294b0
+    Box *b = nullptr;
+    for (Box *e : boxes)
+        if (strcasecmp(e->name.c_str(), n.c_str()) == 0) { b = e; break; }   // 0x423840
+    if (!b) return false;                            // port: the exe's 0x42c610 would read through a null box
+    return overlapping(b) != nullptr;
 }
 
 }  // namespace Raytrace
