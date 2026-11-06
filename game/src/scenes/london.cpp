@@ -206,6 +206,12 @@ void London_Scene::leave() {
     VoiceOver::get().stop();                         // 0x4c9260
     city.close();                                    // 0x41fc50
     deactivate();                                    // +0x1c
+    // port: a script called by the run (state 4) is not stopped by the deactivate above and would go on reading
+    // this scene's unloaded RayTrace after a skip to the hideout (stale memory in the exe; a crash here)
+    keyboard.deactivate();
+    ribbon_script.deactivate();
+    ticktock.deactivate();
+    hunt.deactivate();
     if (waterfall) { waterfall->detach(); delete waterfall; }
     waterfall = nullptr;
     if (cur_normal) { if (g_cursor_graphic == cur_normal) g_cursor_graphic = nullptr; delete cur_normal; }
