@@ -78,6 +78,7 @@ public:
     bool isPlaying();                        // 0x41fec0
     uint32_t lengthMs();                     // 0x41fe30
     bool valid() const { return valid_; }
+    bool isOpen() const { return opened_; }   // 0x41f9c0
 
     // the optional second data block of the record, kept after the ADPCM data is freed (+0x330 / +0x31c)
     std::vector<uint8_t> extra;

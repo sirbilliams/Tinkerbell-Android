@@ -31,29 +31,6 @@ class Cannon;
 class ContinueDialog;
 class MudPie_Scene;
 
-class ScrollGround : public Vision::Graphic {
-public:
-    ScrollGround(const char *first, const char *second);   // 0x4ac0e0
-    ~ScrollGround() override;                        // 0x4ac230
-    void draw() override;                            // v14 0x4ac550
-    void load() override;                            // v15 0x4ac2c0
-    void unload() override;                          // v16 0x4ac350
-    virtual void update();                           // v18 0x4ac3e0
-    void setDir(int d);                              // 0x4ac380: 0 none, 1 left (+0xe8), 2 right (+0xe9)
-    void setMult(int m) { mult = m; }                // 0x4ac3c0
-    void setAuto(bool a) { autoupdate = a; }         // 0x4ac3d0
-    char name1[0x28], name2[0x28];                   // +0x98 +0xc0
-    bool left_ = false, right_ = false;              // +0xe8 +0xe9
-    int speed = 30;                                  // +0xec (ms per unit)
-    uint32_t last = 0;                               // +0xf0
-    bool autoupdate = false;                         // +0xf4
-    float accx = 0, accy = 0;                        // +0xf8 +0xfc
-    int row1 = 0, row2 = 0;                          // +0x100 +0x104
-    int dx = 0, dy = 0;                              // +0x108 +0x10c: this update's moves
-    int mult = 2;                                    // +0x110
-    Vision::Image img1, img2;                        // +0x118 +0x1c0
-};
-
 class MudGround : public ScrollGround {              // vtable 0x513ecc
 public:
     MudGround();
@@ -135,16 +112,6 @@ public:
     int phase = 0;                                   // +0xc4: 0 idle, 1 taking off, 2 flying, 3 landing
     int dir = 0;                                     // +0xc8: 1 north, 2 south, 3 east, 4 west
     uint32_t anim_t = 0, step_t = 0;                 // +0xcc +0xd0
-};
-
-class Scoreboard : public Vision::Graphic {          // 0x4ada80
-public:
-    explicit Scoreboard(const char *bg);
-    ~Scoreboard() override;                          // 0x4add80
-    void draw() override;                            // v14 0x4adf70
-    Vision::Image bg;                                // +0x98
-    std::vector<Vision::Image *> digits, slots;      // +0x140 +0x150
-    int s1 = 0, s2 = 0;                              // +0x160 +0x164
 };
 
 class MudPie_Scene : public Game2D_Scene {

@@ -3,6 +3,7 @@
 #include "london.h"
 #include "lost.h"
 #include "mudpie.h"
+#include "coconut.h"
 #include "map.h"
 #include "state.h"
 #include "game.h"
@@ -113,6 +114,7 @@ void tb_game_register() {
     static MovieScene bumper("Bumper", "DIbumper", "Intro");          // 0x48aee0
     static MovieScene intro("Intro", "LOND_MO_intro", "signin");     // 0x48b150
     Game::mudpie_scene();                                             // 0x436fb0, the static at 0x5a96a0 (scenes/mudpie.cpp)
+    Game::coconut_scene();                                            // 0x449410, the static at 0x5b70f0 (scenes/coconut.cpp)
     Game::lost_scene();                                               // 0x43e5b0, the static at 0x5ac4f8 (scenes/lost_scene.cpp)
     static Game::LostTutorial_Scene lost_tutorial;                   // 0x443e70 -> 0x444440 (scenes/lost.cpp)
     static Game::MapTutorial_Scene map_tutorial;                     // -> 0x4a9340 (scenes/map.cpp)

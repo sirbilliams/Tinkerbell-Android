@@ -17,100 +17,15 @@ namespace Game {
 
 using namespace Vision;
 
-static const uint32_t kKey = 0xffff00ffu;            // 0x44ced0(0xff, 0, 0xff, 0xff): the colour key
-#define GRAPHIC_ARGS 0, 0, 0, 0, 0, 0, true, 0xff000000u, 0, 0, 0, -1, kKey   // 0x411b90 as these classes call it
 
 static bool mouse_down() { return g_mouse.ldown || g_mouse.rdown; }   // 0x5a6e30
 static bool key_down(int vk) { return tb_GetKeyState(vk) < 0; }   // 0x4183f0
-static int ftol(double v) { return (int)v; }         // 0x4f3948 (truncation)
 static int g_flight = 0;                             // 0x535c10: a pie's flight time (ms)
 static void dbg(const char *m) { if (getenv("TB_DEBUG_MUDPIE")) tb_log("mudpie: %s (t=%u)", m, frame_time()); }
 
 MudPie_Scene &mudpie_scene() {                       // the static at 0x5a96a0
     static MudPie_Scene s;
     return s;
-}
-
-// ---------------------------------------------------------------- ScrollGround
-ScrollGround::ScrollGround(const char *a, const char *b)   // 0x4ac0e0
-    : Graphic(GRAPHIC_ARGS), img1("", 0, 0, 0, 0, 0, 0, true), img2("", 0, 0, 0, 0, 0, 0, true) {
-    strcpy(name1, a);
-    strcpy(name2, b);
-    speed = 30;                                      // +0xec
-    x = 0;
-    setZ(1000);                                      // 0x3e8
-}
-
-ScrollGround::~ScrollGround() {}                     // 0x4ac230
-
-void ScrollGround::load() {                          // v15 0x4ac2c0
-    left_ = right_ = false;
-    row1 = 0;
-    dx = dy = 0;
-    accx = accy = 0;
-    autoupdate = true;
-    row2 = -960;                                     // 0xfffffc40
-    mult = 2;
-    img1.setName(name1);                             // 0x424400
-    img1.load();
-    img2.setName(name2);
-    img2.load();
-    last = frame_time();
-}
-
-void ScrollGround::unload() {                        // v16 0x4ac350
-    Graphic::unload();
-    img1.unload();
-    img2.unload();
-}
-
-void ScrollGround::setDir(int d) {                   // 0x4ac380
-    if (d == 0) { left_ = false; right_ = false; }
-    else if (d == 1) { left_ = true; right_ = false; }
-    else if (d == 2) { left_ = false; right_ = true; }
-}
-
-// v18 0x4ac3e0: the time since the last call in units of `speed` ms; sideways 3 a unit while a direction is
-// held (else stopped), down `mult` a unit, both kept in fractions; the rows wrap at 960, x stays within 64.
-void ScrollGround::update() {
-    uint32_t now = frame_time();
-    uint32_t el = now - last;
-    last = now;
-    double d = (double)(uint64_t)el / (double)speed; // fild qword, fidiv
-    if (left_) accx = (float)(d * 3.0f + accx);      // 0x51329c
-    else if (right_) accx = (float)(accx - d * 3.0f);
-    else accx = 0;
-    double f = d * (double)mult + accy;              // fimul, fadd
-    accy = (float)f;                                 // fst (the sum stays on the stack)
-    int ix = ftol(accx);
-    dx = ix;                                         // +0x108
-    int iy = ftol(f);
-    dy = iy;                                         // +0x10c
-    if (iy) {
-        accy = (float)(f - (double)iy);
-        row1 += iy;
-        if (row1 >= 960) row1 = -960;
-        row2 += iy;
-        if (row2 >= 960) row2 = -960;
-    }
-    if (ix) {
-        accx = (float)(accx - (double)ix);
-        int old = x;
-        x = dx + old;
-        if (x > 64) x = 64;
-        if (x < -64) x = -64;
-        dx = x - old;
-    }
-}
-
-void ScrollGround::draw() {                          // v14 0x4ac550
-    if (autoupdate) update();                        // v18
-    img1.x = x;
-    img2.x = x;
-    img1.y = row1 - img1.h / 2 + 240;
-    img2.y = row2 - img2.h / 2 + 240;
-    img1.draw();
-    img2.draw();
 }
 
 // ---------------------------------------------------------------- MudGround
@@ -522,48 +437,6 @@ void Flier::draw() {                                 // v14 0x43adf0
         animate();
         anim_t = now;
     }
-}
-
-// ---------------------------------------------------------------- Scoreboard
-// 0x4ada80: the background, the digits "GLOB_IF_NUM0bg_01".."9" and the four places "GLOB_IF_btrgt_01".."04".
-Scoreboard::Scoreboard(const char *b) : Graphic(GRAPHIC_ARGS), bg(b, 0, 0, 0, 0, 0, 0, true) {
-    bg.load();                                       // v15
-    char n[32];
-    for (int i = 0; i < 10; i++) {
-        snprintf(n, sizeof n, "GLOB_IF_NUM%dbg_01", i);
-        Image *im = Gorilla::gnew<Image>(n, 0, 0, 0, 0, 0, 0, true);
-        digits.push_back(im);
-        im->load();
-    }
-    for (int i = 0; i < 4; i++) {
-        snprintf(n, sizeof n, "GLOB_IF_btrgt_0%d", i + 1);
-        Image *im = Gorilla::gnew<Image>(n, 0, 0, 0, 0, 0, 0, true);
-        slots.push_back(im);
-        im->load();
-    }
-}
-
-Scoreboard::~Scoreboard() {                          // 0x4add80
-    bg.unload();
-    for (Image *im : digits) { im->unload(); delete im; }
-    digits.clear();
-    for (Image *im : slots) { im->unload(); delete im; }
-    slots.clear();
-}
-
-// v14 0x4adf70: each score's tens (from 10) and units at its two places.
-void Scoreboard::draw() {
-    bg.draw();
-    auto put = [this](int digit, int place) {
-        Image *d = digits.at(digit);
-        d->x = slots.at(place)->ox;
-        d->y = slots.at(place)->oy;
-        d->draw();
-    };
-    if (s1 >= 10) put(s1 / 10, 0);
-    put(s1 % 10, 1);
-    if (s2 >= 10) put(s2 / 10, 2);
-    put(s2 % 10, 3);
 }
 
 // ---------------------------------------------------------------- MudPie_Scene

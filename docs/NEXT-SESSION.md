@@ -1,5 +1,17 @@
 # Next session
 
+## Latest (Nov 6 evening, Coconuts Away, ~63%)
+- game/src/scenes/coconut.*: Coconut_Scene (0x449410, "coconut", static 0x5b70f0): pirate rowboats (Boat 0x44b7a0,
+  BoatGroup 0x44c370, the yells SoundCycle 0x4cc220..), coconuts and splashes (CocoItem 0x44c700, CocoGroup move
+  0x44cb70), the rabbit (Rabbit 0x44a710: aim at a boat 0x44adb0 / random spot 0x44af00, land 0x44b090, throw
+  0x44b240), the count bar (CocoScore 0x44a1d0, NumberShow 0x44cdd0), the cursor, keys as mud pie's, the
+  play-again sign (again = Task::reset of the run in place). Ends in change_scene("Mermaid"), which is not ported
+  yet (the lagoon): a win aborts there for now. Exe quirk kept: the rabbit's throw looks its coconut up by the
+  last throw's time, so only its first throw of a game flies.
+- ScrollGround and Scoreboard moved to game2d.* (shared); GRAPHIC_ARGS and ftol there too.
+- Test aid: TB_DEBUG_COCONUT=1; `tinkerbell coconut` + TB_FAKE_INPUT="300:key 81".
+- Next: "birdspy" (0x5c3d08), "colorthecloud" (0x5d0058), "firefly" (0x5d91b0), then the areas.
+
 ## Latest (Nov 6, Mud Pie, ~62%)
 - game/src/scenes/mudpie.*: MudPie_Scene (0x436fb0, "mudpie", the static 0x5a96a0) on Game2D_Scene (game2d.*):
   Peter's top-down greeting (PeterGuide), the scrolling ground (ScrollGround 0x4ac0e0 / MudGround 0x435c70), the

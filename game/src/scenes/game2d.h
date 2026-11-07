@@ -9,8 +9,14 @@
 // depth -10000) with the fader. Entering also loads the "global_2d" pack and its number images (State 0x4eca30).
 #pragma once
 #include "../vision/engine.h"
+#include <vector>
+
+// The Graphic base as the 2D game classes construct it (0x411b90: hidden mask -1, the colour key 0xffff00ff).
+#define GRAPHIC_ARGS 0, 0, 0, 0, 0, 0, true, 0xff000000u, 0, 0, 0, -1, 0xffff00ffu
 
 namespace Game {
+
+inline int ftol(double v) { return (int)v; }          // 0x4f3948 (truncation)
 
 class NeverlandMapIcon;
 class SceneFader;
@@ -40,6 +46,42 @@ public:
     Vision::Image *location = nullptr;               // +0x9c (by "Location")
     Vision::Image *character = nullptr;              // +0xa0 (by "Character")
     Vision::Image *head = nullptr;                   // +0xa4
+};
+
+// ScrollGround (vtable 0x516450, ctor 0x4ac0e0, load 0x4ac2c0, unload 0x4ac350, update v18 0x4ac3e0, draw 0x4ac550):
+// two ground images scrolling down (the up and down keys set the speed); left and right slide it.
+class ScrollGround : public Vision::Graphic {
+public:
+    ScrollGround(const char *first, const char *second);   // 0x4ac0e0
+    ~ScrollGround() override;                        // 0x4ac230
+    void draw() override;                            // v14 0x4ac550
+    void load() override;                            // v15 0x4ac2c0
+    void unload() override;                          // v16 0x4ac350
+    virtual void update();                           // v18 0x4ac3e0
+    void setDir(int d);                              // 0x4ac380: 0 none, 1 left (+0xe8), 2 right (+0xe9)
+    void setMult(int m) { mult = m; }                // 0x4ac3c0
+    void setAuto(bool a) { autoupdate = a; }         // 0x4ac3d0
+    char name1[0x28], name2[0x28];                   // +0x98 +0xc0
+    bool left_ = false, right_ = false;              // +0xe8 +0xe9
+    int speed = 30;                                  // +0xec (ms per unit)
+    uint32_t last = 0;                               // +0xf0
+    bool autoupdate = false;                         // +0xf4
+    float accx = 0, accy = 0;                        // +0xf8 +0xfc
+    int row1 = 0, row2 = 0;                          // +0x100 +0x104
+    int dx = 0, dy = 0;                              // +0x108 +0x10c: this update's moves
+    int mult = 2;                                    // +0x110
+    Vision::Image img1, img2;                        // +0x118 +0x1c0
+};
+
+// Scoreboard (vtable 0x516678, ctor 0x4ada80, 0x168 bytes): a game's two final scores.
+class Scoreboard : public Vision::Graphic {          // 0x4ada80
+public:
+    explicit Scoreboard(const char *bg);
+    ~Scoreboard() override;                          // 0x4add80
+    void draw() override;                            // v14 0x4adf70
+    Vision::Image bg;                                // +0x98
+    std::vector<Vision::Image *> digits, slots;      // +0x140 +0x150
+    int s1 = 0, s2 = 0;                              // +0x160 +0x164
 };
 
 class Game2D_Scene : public Vision::Scene {
