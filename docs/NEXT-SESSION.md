@@ -21,7 +21,12 @@
   Peter); the dialog's sign (no) is at 235,240, the X (again) at 400,240.
 - Not checked: entering from the hideout's mud pie sign (the click spot), catching pies by mouse (works in
   code; no test clicks on moving pies yet).
-- Next: the other Lost Boys games' end handling in "lost" after a mud pie game; then the other areas' scenes.
+- Next: the other four 2D games, same base (Game2D_Scene, PeterGuide, ScrollGround, ContinueDialog, GameEndVo,
+  Scoreboard): "coconut" (static 0x5b70f0, ctor 0x449410, vtable 0x514554: notify2 0x4487a0, run 0x448a20, load2
+  0x449a80, enter 0x449b70, leave 0x44a060, setup 0x448850, mouse 0x448340, keys 0x448670 (as mud pie's), ground
+  0x44a4f0, score 0x44a1d0, boats 0x44c370/0x44b7a0, coconut and splash groups 0x44c700/0x44cb70; pack
+  "coconuts_away"; the player throws coconuts at pirate rowboats, the rabbit flies), then "birdspy" (0x5c3d08),
+  "colorthecloud" (0x5d0058), "firefly" (0x5d91b0); then the other areas.
 
 ## Latest (Nov 6, the Lost Boys' hideout, ~60%)
 - game/src/scenes/lost_scene.cpp: Lost_Scene (0x43e5b0, "lost"): load2/enter/leave, run (arrival, welcome, the
