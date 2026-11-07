@@ -92,4 +92,21 @@ public:
     Screen screen;                      // +0x174
 };
 
+// A mini game's round and end lines (0x2cc0 in the mud pie scene): seven VoLists set by 0x4c3950..0x4c3a40;
+// 0x4c3a60 plays the next end line for the game's result (state +0x7a0), 0x4c3ae0 asks whether it still plays.
+class GameEndVo {
+public:
+    void setWins(const char *a, const char *b, const char *c) { wins.add(a); wins.add(b); wins.add(c); }   // 0x4c3950
+    void setLoses(const char *a, const char *b, const char *c) { loses.add(a); loses.add(b); loses.add(c); }   // 0x4c3980
+    void setTie(const char *a) { tie.add(a); }       // 0x4c39b0
+    void setWinChallenge(const char *a, const char *b, const char *c) { winch.add(a); winch.add(b); winch.add(c); }   // 0x4c39c0
+    void setAward(const char *a) { award.add(a); }   // 0x4c39f0
+    void setLoseChallenge(const char *a, const char *b, const char *c) { losech.add(a); losech.add(b); losech.add(c); }   // 0x4c3a10
+    void setTie2(const char *a) { tie2.add(a); }     // 0x4c3a40
+    void playEnd();                                  // 0x4c3a60
+    bool playing() const { return cur && cur->anyPlaying(); }   // 0x4c3ae0
+    VoList wins, loses, tie, winch, award, losech, tie2;   // +0 +0x34 +0x68 +0x9c +0xd0 +0x104 +0x138
+    VoList *cur = nullptr;                           // +0x16c
+};
+
 }  // namespace Vision

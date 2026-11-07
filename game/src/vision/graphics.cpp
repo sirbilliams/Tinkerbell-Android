@@ -167,6 +167,11 @@ Graphic::Graphic(int x_, int y_, int z_, int w_, int h_, int f6c_, bool vis, uin
     : ox(x_), oy(y_), oz(z_), ow(w_), oh(h_), hitmode(hm), x(x_), y(y_), z(z_), w(w_), h(h_), f6c(f6c_), color(col),
       f78(f78_), f80(f80_), visible(vis), rotation(rot), f8c(f8c_) {}
 Graphic::~Graphic() { if (!tb_exiting()) detach(); }   // 0x402830
+void Graphic::setZ(int v) {              // 0x411e70
+    z = v;
+    if (layer) layer->sort();                // 0x41e9e0
+}
+
 void Graphic::detach() {                 // 0x412200
     if (tb_exiting()) return;
     if (layer) { x += layer->screen->x; y += layer->screen->y; }

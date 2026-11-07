@@ -243,4 +243,13 @@ void ras_close(Ras *r) {
     }
 }
 
+// 0x419620 alone: a user less (the last one deletes it).
+void ras_release(Ras *r) {
+    if (!r || tb_exiting()) return;
+    if (r->users > 0 && --r->users == 0) {
+        if (g_current_ras == r) g_current_ras = nullptr;
+        delete r;
+    }
+}
+
 }  // namespace Vision

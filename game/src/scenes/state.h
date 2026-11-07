@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 #include <cstdint>
-namespace Vision { class Graphic; class Ras; class Sound; }
+namespace Vision { class Graphic; class Image; class Ras; class Sound; }
 namespace Raytrace { struct Sprite3D; class RayTrace; }
 
 namespace Game {
@@ -82,6 +82,10 @@ struct State {
     void finishInit();                               // the rest of 0x4ec6e0: loads the cursors, cannon, voice-over
     void initGlobals();                              // 0x4ec920 (part): the "global" pack and the game cursors
     Vision::Ras *global_ras = nullptr;               // +0x0
+    Vision::Ras *ras2d = nullptr;                    // +0x4 "global_2d" (the 2D scenes')
+    Vision::Image *num_big[10] = {}, *num_small[10] = {};   // +0xc +0x34: "glob_if_num<d>bg_01" / "...sm_01"
+    void openGlobal2d();                             // 0x4eca30 (a 2D scene's enter)
+    void closeGlobal2d();                            // 0x4ecba0 (its leave)
     Vision::Graphic *cursor_active = nullptr;        // +0x60 ("glob_cu_active_")
     Vision::Graphic *cursor = nullptr;               // +0x5c ("glob_cu_normal_"): the game's own cursor (port: created with the state object
                                                      // 0x4ec6e0, not ported yet; null = none)
@@ -91,6 +95,7 @@ struct State {
     bool dusting = false;                            // +0x3c4: the pixie dust is on the cursor
     int dust = 0;                                    // +0x3c8: the pixie dust in the bag (0..50)
     int last_game = 0, last_result = 0;             // +0x79c +0x7a0: the last mini game played and how it ended
+    bool guide_loaded = false;                       // +0x7b8: a mini game's PeterGuide was loaded
     bool flag_ended = false;                         // +0x7a6: the pirate flag game ended (an EndOfGame to run)
     float tink_home[3] = {};                         // +0x7ac..+0x7b4 (0x4e63b0 on +0x78c): where Tink waits
     void setTinkHome(float x, float y, float z) { tink_home[0] = x; tink_home[1] = y; tink_home[2] = z; }
@@ -132,6 +137,10 @@ struct State {
         // first visit's (once), or the reminder until its map segment is won, then the other welcome.
         void welcome();
         bool welcoming();                            // 0x4c6930: that line still plays
+        // 0x4c6970 / 0x4c6af0: the current mini game's first-time flag (coconut 5, birdspy 6, mudpie 7,
+        // colorthecloud 8, firefly 9; another scene: false / nothing)
+        bool gameFirst();
+        void gameDone();
         uint8_t b[0x28];
         std::string line;                            // +0x28
     };

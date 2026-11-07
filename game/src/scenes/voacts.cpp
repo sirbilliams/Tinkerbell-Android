@@ -1,4 +1,5 @@
 #include "voacts.h"
+#include "state.h"
 
 namespace Vision {
 
@@ -156,6 +157,20 @@ void Reminder::run() {                             // 0x4c6290
     screen.deactivate();
     deactivate();
     finish();
+}
+
+// 0x4c3a60: by the result (1..5): the challenge won, the award, the challenge lost (3 and 4), the second tie.
+void GameEndVo::playEnd() {
+    cur = nullptr;
+    switch (Game::state().last_result) {             // +0x7a0, the table 0x4c3ac0
+    case 1: cur = &winch; break;
+    case 2: cur = &award; break;
+    case 3:
+    case 4: cur = &losech; break;
+    case 5: cur = &tie2; break;
+    default: break;
+    }
+    if (cur) cur->playNext();                        // 0x4cc0e0 (port: the exe calls it on null for another result)
 }
 
 }  // namespace Vision

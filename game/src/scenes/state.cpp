@@ -382,3 +382,63 @@ void State::saveLostTokens() {                       // 0x4eec40
 }
 
 }  // namespace Game
+
+namespace Game {
+static void drop_numbers(State &s) {
+    for (int i = 0; i < 10; i++) {
+        delete s.num_big[i];                         // +0xc (deleting dtor)
+        s.num_big[i] = nullptr;
+        delete s.num_small[i];
+        s.num_small[i] = nullptr;
+    }
+}
+
+// 0x4eca30: the pack (re)opened, the twenty number images made from it and loaded.
+void State::openGlobal2d() {
+    if (ras2d) {
+        Vision::ras_close(ras2d);                    // 0x41b050
+        ras2d = nullptr;
+        drop_numbers(*this);
+    }
+    ras2d = Vision::ras_open("global_2d", nullptr, &Vision::data_device());   // 0x419b90
+    ras2d->load();                                   // 0x41aa20
+    char buf[32];
+    for (int i = 0; i < 10; i++) {
+        snprintf(buf, sizeof buf, "glob_if_num%1.1dbg_01", i);   // 0x4f396f
+        num_big[i] = Gorilla::gnew<Vision::Image>(buf, 0, 0, 0, 0, 0, 0, true);   // 0x4179e0
+        snprintf(buf, sizeof buf, "glob_if_num%1.1dsm_01", i);
+        num_small[i] = Gorilla::gnew<Vision::Image>(buf, 0, 0, 0, 0, 0, 0, true);
+    }
+    Vision::ras_set_current(ras2d);                  // 0x41a920
+    for (int i = 0; i < 10; i++) {
+        num_big[i]->load();                          // v15
+        num_small[i]->load();
+    }
+}
+
+void State::closeGlobal2d() {                        // 0x4ecba0
+    if (!ras2d) return;
+    Vision::ras_close(ras2d);
+    ras2d = nullptr;
+    drop_numbers(*this);
+}
+}  // namespace Game
+
+namespace Game {
+static int game_first_index() {
+    static const char *const games[5] = {"coconut", "birdspy", "mudpie", "colorthecloud", "firefly"};
+    Vision::Scene *s = Vision::current_scene();      // 0x5a7394
+    if (!s) return -1;
+    for (int i = 0; i < 5; i++)
+        if (strcmp(s->name(), games[i]) == 0) return 5 + i;
+    return -1;
+}
+bool State::Firsts::gameFirst() {                    // 0x4c6970
+    int i = game_first_index();
+    return i >= 0 ? b[i] != 0 : false;
+}
+void State::Firsts::gameDone() {                     // 0x4c6af0
+    int i = game_first_index();
+    if (i >= 0) b[i] = 0;
+}
+}  // namespace Game

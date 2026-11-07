@@ -253,6 +253,7 @@ Ras *ras_open(const char *name, const char *sub, Device *dev);   // 0x419b90
 Resource *ras_find(const char *name, const char *ext);           // 0x41a3d0
 Ras *ras_set_current(Ras *r);                                    // 0x41a920
 void ras_close(Ras *r);                                          // 0x41b050 (drop the records) + 0x419620 (release)
+void ras_release(Ras *r);                                        // 0x419620 alone
 Device &data_device();                                           // 0x5a70b8
 std::string &cd_root();                                          // 0x5a7568: "<cd>:\<dir>\" (port: the game folder)
 
@@ -272,6 +273,7 @@ public:
     virtual void unload();                           // +0x40
     int left(); int top(); int right(); int bottom();   // +0x1c..+0x28
     void detach();                                   // 0x412200
+    void setZ(int v);                                // 0x411e70: and the layer re-sorted
     bool inBox(int x, int y);                        // 0x411ee0
     // The hit mask (+0x54, built by setHit through 0x4122a0 from the pixels that are not the colour key f8c).
     // port: one byte per pixel instead of the exe's row runs (game/src/vision/hitmask.cpp).
