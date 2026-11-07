@@ -65,6 +65,13 @@ void CloudBank::reset() {                            // 0x4acf00
     mode = 1;
 }
 
+void CloudBank::cover() {                            // 0x4acf20
+    y = -1000;
+    x = 0;
+    shown = true;
+    mode = 0;
+}
+
 // ---------------------------------------------------------------- PlayerBadge
 static Image *badge_image(const char *n) { return Gorilla::gnew<Image>(n, 0, 0, 0, 0, 0, 0, true); }
 

@@ -115,6 +115,7 @@ public:
     Coroutine *co = nullptr;                         // port: the task's own stack (was a jmp_buf at +0x48)
 };
 void tasks_frame();                                  // 0x421350
+void tasks_finish_all();                             // 0x4210d0
 
 // ---------------------------------------------------------------- Scene (vtable 0x51391c)
 class Scene : public Task {
@@ -132,6 +133,7 @@ public:
     virtual void enter() {}                          // +0x4c
     virtual void leave() {}                          // +0x50
     virtual void sceneTick() {}                      // +0x54
+    void again();                                    // 0x41dde0: this scene next (left and entered again)
     Node *scene_node = nullptr;                      // +0xc0
     Scene *previous = nullptr;                       // +0xc4
     int loads = 0;                                   // +0xc8

@@ -85,9 +85,9 @@ Screen::~Screen() {                      // 0x41ee10
 Node *Screen::root() { return &screen_list(); }
 void Screen::activate() {                // 0x41edb0
     if (node) return;
-    Node *after = nullptr;
-    for (Node *n = screen_list().first; n && ((Screen *)n->obj)->depth < depth; n = n->next) after = n;
-    node = screen_list().add(after, this);
+    Node *before = nullptr;                          // from the end back past the shallower ones (deepest first)
+    for (Node *n = screen_list().last; n && depth > ((Screen *)n->obj)->depth; n = n->prev) before = n;
+    node = screen_list().add(before, this);
     dirty();
 }
 void Screen::draw() {                    // 0x41eaf0
@@ -147,17 +147,17 @@ void Layer::add(Graphic *g) {            // 0x41e930
         if (g->layer == this) return;
         g->detach();
     }
-    Node *after = nullptr;
-    for (Node *n = graphics.first; n && ((Graphic *)n->obj)->z < g->z; n = n->next) after = n;
+    Node *before = nullptr;                          // from the end back past the nearer ones (highest z first)
+    for (Node *n = graphics.last; n && g->z > ((Graphic *)n->obj)->z; n = n->prev) before = n;
     g->x -= screen->x;
     g->y -= screen->y;
-    g->node = graphics.add(after, g);
+    g->node = graphics.add(before, g);
     g->layer = this;
     screen->dirty();
 }
 void Layer::remove(Graphic *g) { if (g->layer == this) g->detach(); }
 void Layer::sort() {                     // 0x41e9e0 (0x41e9c0: by z)
-    graphics.sort([](Object *a, Object *b) { return ((Graphic *)a)->z - ((Graphic *)b)->z; });
+    graphics.sort([](Object *a, Object *b) { return ((Graphic *)b)->z - ((Graphic *)a)->z; });
     screen->dirty();
 }
 
@@ -303,7 +303,7 @@ bool decode(const Pixelmap *pm, const Palette *pal, Decoded &d, bool as_alpha) {
                 // port: px() bounds-checks its source against the record's end, so a run value is passed as a one-byte
                 // source inside the record (p - 2), not a local
                 for (int k = 0; k < cnt && i < n; k++, i++) if (v != esc) px(i, p - 2);
-            } else { px(i, &b); i++; }
+            } else { px(i, p - 1); i++; }        // (the byte in the record, for px's bounds check)
         }
         return true;
     }

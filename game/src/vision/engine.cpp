@@ -262,7 +262,15 @@ void Task::deactivate() {                                       // 0x420eb0
         if (t->state == 3) t->deactivate();
     }
 }
+// The exe's run() resumes its saved frame only while +0x3c is set; reset and finish clear it, so the task's next
+// run starts over. port: the same by dropping a task's coroutine that is part way through its run (unless it is
+// the one running now, which carries on as the exe's does).
+static void co_restart(Task *t, Coroutine *c) {
+    if (c && c != g_current_co && !c->done) co_kill(t);
+}
+
 void Task::reset() {                                            // 0x421110
+    co_restart(this, co);
     field40 = 0; suspended = false; wake = 0;
     for (Node *c = children.first; c; c = c->next) {
         Task *t = (Task *)c->obj;
@@ -286,6 +294,7 @@ void Task::call(Task *child) {                                  // 0x420f60
     child->activate();
 }
 void Task::finish() {                                           // 0x420fe0
+    co_restart(this, co);
     field40 = 0; suspended = false; wake = 0;
     for (Node *c = children.first; c; c = c->next) {
         Task *t = (Task *)c->obj;
@@ -304,6 +313,15 @@ void Task::finish() {                                           // 0x420fe0
     }
     if (state >= 0 && state <= 4) finished_tasks().addOwned(nullptr, this);
     if (finished_node) Gorilla::tb_unlink_and_delete(finished_node);
+}
+
+void tasks_finish_all() {                                       // 0x4210d0: the last one finished until none run
+    Node &l = task_list();
+    while (!l.kids.empty()) {
+        size_t n = l.kids.size();
+        ((Task *)l.kids.back()->obj)->finish();
+        if (l.kids.size() >= n) break;               // port: a guard (the exe would spin)
+    }
 }
 
 void tasks_frame() {                                            // 0x421350
@@ -337,6 +355,7 @@ Scene *find_scene(const char *n) {                              // 0x41de20
         if (strcasecmp(s->obj->name(), n) == 0) return (Scene *)s->obj;
     return nullptr;
 }
+void Scene::again() { g_pending = this; }                       // 0x41dde0
 void change_scene(const char *n) {                              // 0x41ddf0
     Scene *s = find_scene(n);
     if (s) { g_pending = s; return; }

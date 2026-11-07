@@ -25,6 +25,7 @@ public:
     bool rise();                                     // 0x4acec0: up 20 while y <= -50 (else mode 2, false)
     bool fall();                                     // 0x4acee0: down 20 while y <= 1000 (else mode 2, false)
     void reset();                                    // 0x4acf00
+    void cover();                                    // 0x4acf20: above the screen (y -1000), shown, mode 0
     Vision::Image image;                             // +0x98
     bool shown = false;                              // +0x140
     int mode = 2;                                    // +0x148

@@ -25,14 +25,14 @@ static Node *link_new(Node *self, Node *after, Object *o, bool owns) {
     n->obj = o;
     n->owns = owns;
     if (owns && o) o->ref();
-    if (after) {                                             // insert after 'after' (0x4255d0 moves it in the array)
+    if (after) {                                             // insert before 'after' (as 0x424d10 links it)
         n->parent = after->parent;
-        n->prev = after;
-        n->next = after->next;
-        if (after->next) after->next->prev = n; else n->parent->last = n;
-        after->next = n;
+        n->next = after;
+        n->prev = after->prev;
+        if (after->prev) after->prev->next = n; else n->parent->first = n;
+        after->prev = n;
         Node *p = n->parent;
-        p->kids.insert(p->kids.begin() + after->index + 1, n);
+        p->kids.insert(p->kids.begin() + after->index, n);
         for (size_t i = 0; i < p->kids.size(); i++) p->kids[i]->index = (int)i;
         return n;
     }

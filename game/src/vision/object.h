@@ -37,8 +37,8 @@ struct Node {
     std::vector<Node *> kids;      // +0x24 / +0x28 / +0x2c
     Node() {}
     ~Node();
-    Node *add(Node *after, Object *o);          // 0x424d10
-    Node *addOwned(Node *after, Object *o);     // 0x424b70
+    Node *add(Node *before, Object *o);         // 0x424d10: linked in before `before` (null: at the end)
+    Node *addOwned(Node *before, Object *o);    // 0x424b70
     void remove();                              // 0x4252e0 (unlink, free children; the caller deletes)
     void clear();                               // 0x425060
     Object *object() const { return obj; }      // 0x4250d0

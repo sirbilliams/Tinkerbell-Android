@@ -1,5 +1,28 @@
 # Next session
 
+## Latest (Nov 6, Mud Pie, ~62%)
+- game/src/scenes/mudpie.*: MudPie_Scene (0x436fb0, "mudpie", the static 0x5a96a0) on Game2D_Scene (game2d.*):
+  Peter's top-down greeting (PeterGuide), the scrolling ground (ScrollGround 0x4ac0e0 / MudGround 0x435c70), the
+  four Lost Boys throwing (Thrower 0x439930), the pies and gems (Flyer 0x439ca0), the skunk (Flier 0x43a2d0 + AI
+  0x43a050/0x43a160), the score bars (MudScore 0x438a80), the end scoreboard (0x4ada80), the play-again sign
+  (continue_dialog.*, 0x4e5330, shared by the mini games), the cursor (MudCursor), keys (up/down speed,
+  left/right slide), the end lines (GameEndVo). Tested headless: a full round, the scoreboard, both answers of the
+  dialog (again: the scene re-enters and replays; no: back to "lost"); ASan clean.
+- Engine fixes found on the way (all scenes):
+  - Node::add links in BEFORE the given node (0x424d10); Layer::add / Screen::activate walk from the end (0x41e930,
+    0x41edb0) and Layer::sort is by descending z (0x41e9c0): the highest z draws first, -1000 on top. The port had
+    the order reversed (it only showed in 2D scenes; the overlay screen (-10000) is now on top too).
+  - The kind-3 (escape-byte RLE) decoder dropped every literal pixel (bounds check against a local): sprites in
+    that format came out in pieces (the Lost Boys from above, Peter's top-down art).
+  - Task::reset / finish restart the task's run (the exe clears +0x3c so run() starts over): a scene re-entered
+    while its run was suspended now starts again.
+  - Scene::again (0x41dde0), tasks_finish_all (0x4210d0), CloudBank::cover (0x4acf20).
+- Test aid: TB_DEBUG_MUDPIE=1 logs the run's stages. `tinkerbell mudpie` + TB_FAKE_INPUT="300:key 81" (Q skips
+  Peter); the dialog's sign (no) is at 235,240, the X (again) at 400,240.
+- Not checked: entering from the hideout's mud pie sign (the click spot), catching pies by mouse (works in
+  code; no test clicks on moving pies yet).
+- Next: the other Lost Boys games' end handling in "lost" after a mud pie game; then the other areas' scenes.
+
 ## Latest (Nov 6, the Lost Boys' hideout, ~60%)
 - game/src/scenes/lost_scene.cpp: Lost_Scene (0x43e5b0, "lost"): load2/enter/leave, run (arrival, welcome, the
   mud pie end, sign games, bucket end with Peter's map prompt or cap), mouse (bell help, map, signs, dust on hiding
