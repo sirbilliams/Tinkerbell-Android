@@ -2,6 +2,7 @@
 #include "game2d.h"
 #include "state.h"
 #include "toolbar.h"
+#include "../vision/animation.h"
 #include "raytrace_scene.h"
 #include <stdio.h>
 #include <string.h>
@@ -292,6 +293,85 @@ void Game2D_Scene::leave() {
     delete fader;                                    // (after its screen in the exe too)
     fader = nullptr;
     Game::state().closeGlobal2d();                   // 0x4ecba0
+}
+
+// ---------------------------------------------------------------- AnimationOrganizer / TopDownCharacterRenderer
+AnimationOrganizer::AnimationOrganizer(const char *n, const char *p) : Graphic(GRAPHIC_ARGS) {
+    strncpy(name, n, sizeof name - 1);
+    name[sizeof name - 1] = 0;
+    strncpy(prefix, p, sizeof prefix - 1);
+    prefix[sizeof prefix - 1] = 0;
+}
+AnimationOrganizer::~AnimationOrganizer() {          // 0x4ac5f0
+    Graphic::unload();
+    delete anim;
+    anim = nullptr;
+}
+void AnimationOrganizer::load() {                    // 0x4ac680
+    anim = Gorilla::gnew<Vision::Animation>(prefix);
+    anim->load();
+}
+void AnimationOrganizer::unload() {                  // 0x4ac6f0
+    Graphic::unload();
+    delete anim;
+    anim = nullptr;
+}
+void AnimationOrganizer::draw() {                    // 0x4ac720
+    anim->x = x;
+    anim->y = y;
+    anim->draw();
+}
+
+TopDownCharacterRenderer::TopDownCharacterRenderer() : Graphic(GRAPHIC_ARGS) { setZ(25); }   // 0x4ac750 (0x19)
+TopDownCharacterRenderer::~TopDownCharacterRenderer() {   // 0x4ac800
+    for (int i = 0; i < count; i++) {
+        delete list[i];
+        list[i] = nullptr;
+    }
+}
+void TopDownCharacterRenderer::add(const char *n, const char *p) {   // 0x4ac930
+    list[count] = Gorilla::gnew<AnimationOrganizer>(n, p);
+    count++;
+}
+void TopDownCharacterRenderer::load() {              // 0x4ac8a0
+    for (int i = 0; i < count; i++) list[i]->load();
+    cur = 0;
+}
+void TopDownCharacterRenderer::unload() {            // 0x4ac8f0
+    Graphic::unload();
+    for (int i = 0; i < count; i++) list[i]->unload();
+}
+void TopDownCharacterRenderer::select(Vision::Animation *a, bool loop) {   // 0x4aca50
+    for (int i = 0; i < count; i++) {
+        if (list[i]->anim != a) continue;
+        cur = i;
+        list[i]->anim->mode = loop ? 1 : 0;
+        return;
+    }
+}
+void TopDownCharacterRenderer::select(const char *n, bool loop) {   // 0x4acad0
+    for (int i = 0; i < count; i++) {
+        if (strcmp(list[i]->name, n)) continue;
+        cur = i;
+        list[i]->anim->mode = loop ? 1 : 0;
+        return;
+    }
+}
+int TopDownCharacterRenderer::frame() { return list[cur]->anim->current(); }   // 0x4acb60
+bool TopDownCharacterRenderer::hitAt(int px, int py) { return list[cur]->anim->hit(px, py); }   // 0x4acb80
+bool TopDownCharacterRenderer::atEnd() {             // 0x4acbb0
+    return list[cur]->anim->current() >= list[cur]->anim->count() - 1;
+}
+void TopDownCharacterRenderer::draw() {              // 0x4acc00
+    list[cur]->x = x;
+    list[cur]->y = y;
+    list[cur]->draw();
+}
+bool TopDownCharacterRenderer::isCur(const char *n) { return !strcmp(list[cur]->name, n); }   // 0x4acc40
+Vision::Animation *TopDownCharacterRenderer::find(const char *n) {   // 0x4acc70
+    for (int i = 0; i < count; i++)
+        if (!strcmp(list[i]->name, n)) return list[i]->anim;
+    return nullptr;
 }
 
 }  // namespace Game

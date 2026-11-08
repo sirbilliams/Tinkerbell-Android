@@ -1,5 +1,23 @@
 # Next session
 
+## Latest (Nov 8 night, Color the Clouds, ~67%)
+- game/src/scenes/colorthecloud.*: ColorTheCloud_Scene (0x46ce80, "colorthecloud", static 0x5d0058).
+  - Clouds drift down (ColorableCloud 0x46d790). Paint balloons burst on them (CTCPaintBalloon 0x46e560/0x46e6a0).
+  - A splash grows rings of colour in the cloud's own pixels (paint 0x46dae0, all three pixel layouts). The
+    port then drops the blitter's decoded copy (blit_forget).
+  - A cloud leaving the bottom scores its size for its last colour (CloudSpawner 0x46e150/0x46e1f0).
+  - Peter decides, flies, and throws (PeterAI 0x46e880..0x46eeb0, on the new shared TopDownCharacterRenderer and
+    AnimationOrganizer in game2d.*, 0x4ac5f0..0x4acc70).
+  - The score bar is CTCInterface 0x46ef70; the cursor is CTCCursor 0x46d3c0.
+- Exe quirks kept:
+  - The cursor's chime "COLR_FX_CUactivate01" is never found (the file is ..._01), so it is retried every frame.
+  - A balloon's timer is never restarted, so after 50 ms it steps every draw.
+  - Peter's "throw" test names an animation he doesn't have.
+  - The run never finishes after the end (it keeps the cursor updated).
+- The colours come from State::frame_color (the sign-in frame). Both endings go to "Starry", which isn't ported yet.
+- Test aid: TB_DEBUG_CLOUD=1; `tinkerbell colorthecloud` + TB_FAKE_INPUT="60:key 32" (space skips Peter's welcome).
+- Next: "firefly" (0x5d91b0), then the areas.
+
 ## Latest (Nov 8, Bird Spy, ~65%)
 - game/src/scenes/birdspy.*: BirdSpy_Scene (0x459f50, "birdspy", static 0x5c3d08). Big birds (GeneralBirdTask
   0x45d890 with BirdSpyGeneral / BirdSpySingleAnim) and small ones (Bird8Task 0x45e3f0 with BirdSpy8 /
@@ -14,7 +32,6 @@
   - The medium cloud is never chosen.
 - Both endings go to change_scene("Indian_Village"), which isn't ported yet (as Mermaid for coconut).
 - Test aid: TB_DEBUG_BIRDSPY=1; `tinkerbell birdspy` + TB_FAKE_INPUT="60:key 81".
-- Next: "colorthecloud" (0x5d0058), "firefly" (0x5d91b0), then the areas.
 
 ## Latest (Nov 6 evening, Coconuts Away, ~63%)
 - game/src/scenes/coconut.*: Coconut_Scene (0x449410, "coconut", static 0x5b70f0): pirate rowboats (Boat 0x44b7a0,

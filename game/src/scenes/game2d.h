@@ -9,6 +9,7 @@
 // depth -10000) with the fader. Entering also loads the "global_2d" pack and its number images (State 0x4eca30).
 #pragma once
 #include "../vision/engine.h"
+#include "../vision/animation.h"
 #include <vector>
 
 // The Graphic base as the 2D game classes construct it (0x411b90: hidden mask -1, the colour key 0xffff00ff).
@@ -71,6 +72,41 @@ public:
     int dx = 0, dy = 0;                              // +0x108 +0x10c: this update's moves
     int mult = 2;                                    // +0x110
     Vision::Image img1, img2;                        // +0x118 +0x1c0
+};
+
+// AnimationOrganizer (vtable 0x5164a0, 0xf0 bytes, dtor 0x4ac5f0): one named animation of a character.
+class AnimationOrganizer : public Vision::Graphic {
+public:
+    AnimationOrganizer(const char *name, const char *prefix);   // (inline in 0x4ac930)
+    ~AnimationOrganizer() override;                  // 0x4ac5f0
+    void draw() override;                            // v14 0x4ac720
+    void load() override;                            // v15 0x4ac680
+    void unload() override;                          // v16 0x4ac6f0
+    char name[0x28];                                 // +0x98
+    char prefix[0x28];                               // +0xc0
+    Vision::Animation *anim = nullptr;               // +0xe8
+};
+
+// TopDownCharacterRenderer (vtable 0x5164ec, ctor 0x4ac750, dtor 0x4ac800): a character drawn with one of its
+// named animations.
+class TopDownCharacterRenderer : public Vision::Graphic {
+public:
+    TopDownCharacterRenderer();                      // 0x4ac750
+    ~TopDownCharacterRenderer() override;            // 0x4ac800
+    void draw() override;                            // v14 0x4acc00
+    void load() override;                            // v15 0x4ac8a0
+    void unload() override;                          // v16 0x4ac8f0
+    void add(const char *name, const char *prefix);  // 0x4ac930
+    void select(Vision::Animation *a, bool loop);    // 0x4aca50
+    void select(const char *name, bool loop);        // 0x4acad0
+    int frame();                                     // 0x4acb60
+    bool hitAt(int x, int y);                        // 0x4acb80
+    bool atEnd();                                    // 0x4acbb0
+    bool isCur(const char *name);                    // 0x4acc40
+    Vision::Animation *find(const char *name);       // 0x4acc70
+    int count = 0;                                   // +0xa0
+    int cur = 0;                                     // +0xa4
+    AnimationOrganizer *list[0x10] = {};             // +0xa8
 };
 
 // Scoreboard (vtable 0x516678, ctor 0x4ada80, 0x168 bytes): a game's two final scores.
