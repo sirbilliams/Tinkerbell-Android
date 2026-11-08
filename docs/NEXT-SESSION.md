@@ -1,5 +1,21 @@
 # Next session
 
+## Latest (Nov 8, Bird Spy, ~65%)
+- game/src/scenes/birdspy.*: BirdSpy_Scene (0x459f50, "birdspy", static 0x5c3d08). Big birds (GeneralBirdTask
+  0x45d890 with BirdSpyGeneral / BirdSpySingleAnim) and small ones (Bird8Task 0x45e3f0 with BirdSpy8 /
+  BirdSpy8Anim) fly over the ground, clouds over them (CloudTask 0x45f490). Peter flies about and spots birds
+  (BirdPeterControlTask 0x45d680, BirdPeterRenderer 0x45c950). The rings fill with icons (BirdScore 0x45f880).
+  The glass cursor is BirdCursor 0x45f100, which uses the new Vision::Lens (vision/lens.*, 0x414dd0: a 2x
+  magnifier on the 16-bit canvas). The in-place fast path 0x415350 is drawn with the buffered one (marked port:).
+- Exe quirks kept:
+  - pick() marks every bird hit on a click as caught, even ones behind the winner.
+  - nearest() returns the root of the last bird's distance, not the nearest one's.
+  - The birds' 10 s timer test only holds on the first step.
+  - The medium cloud is never chosen.
+- Both endings go to change_scene("Indian_Village"), which isn't ported yet (as Mermaid for coconut).
+- Test aid: TB_DEBUG_BIRDSPY=1; `tinkerbell birdspy` + TB_FAKE_INPUT="60:key 81".
+- Next: "colorthecloud" (0x5d0058), "firefly" (0x5d91b0), then the areas.
+
 ## Latest (Nov 6 evening, Coconuts Away, ~63%)
 - game/src/scenes/coconut.*: Coconut_Scene (0x449410, "coconut", static 0x5b70f0): pirate rowboats (Boat 0x44b7a0,
   BoatGroup 0x44c370, the yells SoundCycle 0x4cc220..), coconuts and splashes (CocoItem 0x44c700, CocoGroup move
