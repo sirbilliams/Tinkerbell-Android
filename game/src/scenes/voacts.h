@@ -56,6 +56,7 @@ class PreSceneVo : public Task {
 public:
     PreSceneVo(const char *line, const char *scene) : Task(nullptr), line(line), scene(scene) {}
     void run() override;                // 0x4c5dc0: hides the cursor, plays the line, then changes scene
+    void start(const char *l, const char *s);   // 0x4c5d60: the line and scene set, the input held, started
     std::string line;                   // +0xc0
     std::string scene;                  // +0xcc
 };

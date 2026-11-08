@@ -1,5 +1,26 @@
 # Next session
 
+## Latest (Nov 8 night, Firefly, ~69%)
+- game/src/scenes/firefly.*: Firefly_Scene (0x47db70, "firefly", static 0x5d91b0; files "DCBL_").
+  - Swarms drift over the ground (Swarm 0x47eb90). The jar cursor catches up to six fireflies (FireflyCursor
+    0x47bda0), then a click lights a lamp or a walking turtle's lantern (BackgroundScroller 0x47f040, on
+    ScrollGround; Turtle 0x47e7a0, TurtleGroup spawn 0x480100).
+  - Peter catches and lights too (PeterControlScript 0x47e000..0x47e610). Eight lights win (FFInterface 0x480430).
+- Exe quirks kept:
+  - "dcbl_fx_gdrop" doesn't exist (the file is ..._Gdop).
+  - The swarm's timer never restarts.
+  - nearestLight returns only the turtles' answer.
+  - The nearest searches move "best" before testing the screen bounds.
+- Both endings go to "Skull" (not ported yet).
+- Test aid: TB_DEBUG_FIREFLY=1; `tinkerbell firefly` + TB_FAKE_INPUT="60:key 81".
+- The map: game/src/scenes/map.* Map_Scene (0x4a52a0, "map", vtable 0x515d60). The map icon in every scene now
+  works. Area buttons play Peter's "trans" line, then go to the area (PreSceneVo::start 0x4c5d60). The other
+  buttons go to the credits, "pickagame" (only with the treasure), quit (asked twice), signin (asked twice), the
+  treasure map, "treasure" and back (to State::last_scene). F1..F3 set the skill (the exe's developer keys).
+  Test aid: TB_DEBUG_MAP=1 logs the buttons.
+- Next: the areas ("indian_village" 0x467fc0, "mermaid" 0x44d9c0, "starry" 0x477b30, "skull" 0x488260), the
+  "pickagame" room (0x4ae6a0), "treasure" (0x48f660), and the 3D games inside the areas.
+
 ## Latest (Nov 8 night, Color the Clouds, ~67%)
 - game/src/scenes/colorthecloud.*: ColorTheCloud_Scene (0x46ce80, "colorthecloud", static 0x5d0058).
   - Clouds drift down (ColorableCloud 0x46d790). Paint balloons burst on them (CTCPaintBalloon 0x46e560/0x46e6a0).
@@ -16,7 +37,6 @@
   - The run never finishes after the end (it keeps the cursor updated).
 - The colours come from State::frame_color (the sign-in frame). Both endings go to "Starry", which isn't ported yet.
 - Test aid: TB_DEBUG_CLOUD=1; `tinkerbell colorthecloud` + TB_FAKE_INPUT="60:key 32" (space skips Peter's welcome).
-- Next: "firefly" (0x5d91b0), then the areas.
 
 ## Latest (Nov 8, Bird Spy, ~65%)
 - game/src/scenes/birdspy.*: BirdSpy_Scene (0x459f50, "birdspy", static 0x5c3d08). Big birds (GeneralBirdTask

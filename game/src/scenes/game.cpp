@@ -6,6 +6,7 @@
 #include "coconut.h"
 #include "birdspy.h"
 #include "colorthecloud.h"
+#include "firefly.h"
 #include "map.h"
 #include "state.h"
 #include "game.h"
@@ -119,8 +120,10 @@ void tb_game_register() {
     Game::coconut_scene();                                            // 0x449410, the static at 0x5b70f0 (scenes/coconut.cpp)
     Game::birdspy_scene();                                            // 0x459f50, the static at 0x5c3d08 (scenes/birdspy.cpp)
     Game::colorthecloud_scene();                                      // 0x46ce80, the static at 0x5d0058 (scenes/colorthecloud.cpp)
+    Game::firefly_scene();                                            // 0x47db70, the static at 0x5d91b0 (scenes/firefly.cpp)
     Game::lost_scene();                                               // 0x43e5b0, the static at 0x5ac4f8 (scenes/lost_scene.cpp)
     static Game::LostTutorial_Scene lost_tutorial;                   // 0x443e70 -> 0x444440 (scenes/lost.cpp)
+    static Game::Map_Scene map_scene;                                // 0x4a52a0, the static at 0x621018 (scenes/map.cpp)
     static Game::MapTutorial_Scene map_tutorial;                     // -> 0x4a9340 (scenes/map.cpp)
     static Game::SignIn_Scene signin;                                 // 0x4afc40 (scenes/signin.cpp)
     static Game::London_Scene london;                                 // 0x4b6440 (scenes/london.cpp)

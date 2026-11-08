@@ -144,6 +144,21 @@ public:
     MermaidCoveTCD tcd_mcov;                         // +0x24c8
 };
 
+// Map_Scene (vtable 0x515d60, ctor 0x4a52a0, "map"): the map the player uses: an area's button goes there (Peter
+// says where first), the others to the credits, the pick-a-game room, quitting (asked twice), the sign-in room, the
+// treasure map, the treasure, back to the last 3D place.
+class Map_Scene : public Map_Scene_Base {
+public:
+    Map_Scene();                                     // 0x4a52a0
+    void enter() override;                           // v19 0x4a4af0
+    void run() override;                             // v10 0x4a5060
+    void onMouse() override;                         // v22 0x4a4c80
+    void onKey() override;                           // v23 0x4a4ca0
+    void setMode(int m) override;                    // v24 0x4a5030
+    bool quit_armed = false;                         // +0x2950
+    bool sign_armed = false;                         // +0x2951
+};
+
 class MapTutorialCursor : public Graphic {           // vtable 0x5161a0
 public:
     MapTutorialCursor();                             // (the enter's inlined ctor)

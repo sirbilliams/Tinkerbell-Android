@@ -80,6 +80,7 @@ void AmbientSprite::run() {
             if (fabs(rel) > limit) break;
         }
         s = rt->findSprite(name.c_str());
+        if (!s) break;                               // port: gone with its scene (left for the map) before this task
         double a = atan2((double)s->z - rt->camz, (double)s->x - rt->camx) + (double)(kPi * 0.5f);
         s->x = (float)(cos(a) * speed + s->x);
         s->z = (float)(sin(a) * speed + s->z);

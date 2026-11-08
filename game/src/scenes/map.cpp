@@ -1,6 +1,10 @@
 // The map of Neverland, reconstructed from "Tinker Bell.exe" (see map.h).
 #include "map.h"
 #include "state.h"
+#include "tb.h"
+#include <stdlib.h>
+#include "voiceover.h"
+#include "voacts.h"
 #include "../vision/engine.h"
 #include <stdio.h>
 #include <string.h>
@@ -519,6 +523,150 @@ void MapTutorial_Scene::run() {
     playWait(8);                                     // the click
     change_scene("lost");                            // 0x41ddf0
     for (;;) wait(30);
+}
+
+// ---------------------------------------------------------------- Map_Scene
+Map_Scene::Map_Scene() : Map_Scene_Base("map") {}   // 0x4a52a0
+
+// v19 0x4a4af0: the buttons' pause lines; the game's cursor; the pick-a-game room only with the treasure, the
+// treasure map only with a piece of it; input.
+void Map_Scene::enter() {
+    Map_Scene_Base::enter();
+    indv->setPauseLine("GLOB_VO_PETindv");
+    mcov->setPauseLine("GLOB_VO_PETmcov");
+    skrl->setPauseLine("GLOB_VO_PETsklr");
+    star->setPauseLine("GLOB_VO_PETstar");
+    lost->setPauseLine("GLOB_VO_PETlost");
+    crd->setPauseLine("GLOB_VO_PETcred");
+    pik->setPauseLine("GLOB_VO_PETpick");
+    quit->setPauseLine("GLOB_VO_PETquit");
+    sign->setPauseLine("GLOB_VO_PETsgnin");
+    tmap->setPauseLine("GLOB_VO_PETtogon");
+    rtrn->setPauseLine("GLOB_VO_PETresume");
+    xspot->setPauseLine("WAMI_VO_PETgotopo");
+    State &st = Game::state();
+    set_cursor(st.cursor, g_cursor_graphic ? g_cursor_graphic->visible : false);
+    show_cursor();                                   // (the hotspot 0x5a6930/34 zeroed: the port has none)
+    bool has = false;
+    if (!st.saves.hasTreasure(&has)) has = false;    // 0x4eae10
+    if (!has) pik->enabled = false;                  // +0x3dc
+    if (!st.saves.anyMapSegment()) tmap->enabled = false;   // 0x4eabb0
+    mouse.activate();
+    keys.activate();
+    st.last_game = 0;                                // +0x79c
+    quit_armed = false;
+    sign_armed = false;
+}
+
+// v10 0x4a5060: Peter's treasure-map line followed by its "off" line; the buttons hidden while the credits roll
+void Map_Scene::run() {
+    wait(1);
+    for (;;) {
+        if (mode == 1 && vo_isPlaying("GLOB_VO_PETtogon")) {   // 0x4c9690
+            while (vo_isPlaying("GLOB_VO_PETtogon")) wait(30);
+            vo_play("GLOB_VO_PETtogoff");
+        }
+        wait(30);
+        MapButton *bs[11] = {indv, mcov, skrl, star, lost, crd, pik, quit, sign, tmap, rtrn};
+        if (credits.task.active()) {                 // +0x5d0 v5
+            for (MapButton *b : bs) b->visible = false;
+        } else if (!map2.visible) {                  // +0xf34
+            for (MapButton *b : bs) b->visible = true;
+        }
+    }
+}
+
+// v24 0x4a5030
+void Map_Scene::setMode(int m) {
+    if (m == 1) vo_play("GLOB_VO_PETtogon");
+    Map_Scene_Base::setMode(m);
+}
+
+// v23 0x4a4ca0: F1..F3 set the skill (a developer's keys)
+void Map_Scene::onKey() {
+    if (!g_key.down) return;
+    State &st = Game::state();
+    if (g_key.vk == 0x70) st.skill = 1;              // 0x418470(1): vk == n + 0x6f
+    if (g_key.vk == 0x71) st.skill = 2;
+    if (g_key.vk == 0x72) st.skill = 3;
+}
+
+// v22 0x4a4c80: on the treasure map a click goes back to the map; else each button
+void Map_Scene::onMouse() {
+    if (getenv("TB_DEBUG_MAP")) {
+        tb_log("map: mouse %d,%d down %d mode %d", g_mouse.x, g_mouse.y, g_mouse.ldown, mode);
+        MapButton *dbs[12] = {indv, mcov, skrl, star, lost, crd, pik, quit, sign, tmap, rtrn, xspot};
+        for (MapButton *b : dbs) tb_log("  button %s at %d,%d vis %d en %d hit %d", b->idle.prefix.c_str(), b->idle.x, b->idle.y, b->visible, b->enabled, b->hit(g_mouse.x, g_mouse.y));
+    }
+    if (mode == 1) {
+        if (g_mouse.ldown || g_mouse.rdown) setMode(0);   // 0x5a6e30, v24
+        return;
+    }
+    State &st = Game::state();
+    set_cursor(st.cursor, g_cursor_graphic ? g_cursor_graphic->visible : false);
+    if (indv->update()) {
+        previo.start("INDV_VO_PETtrans", "indian_village");   // 0x4c5d60
+        indv->enabled = false;
+    }
+    if (mcov->update()) {
+        previo.start("MCOV_VO_PETtrans", "mermaid");
+        mcov->enabled = false;
+    }
+    if (skrl->update()) {
+        previo.start("SKLR_VO_PETtrans", "skull");
+        skrl->enabled = false;
+    }
+    if (star->update()) {
+        previo.start("STAR_VO_PETtrans", "starry");
+        star->enabled = false;
+    }
+    if (lost->update()) {
+        previo.start("LOST_VO_PETtrans", "lost");
+        lost->enabled = false;
+    }
+    if (crd->update()) {
+        credits.visible = true;                      // +0x5b4
+        credits.start();                             // 0x4a4880
+    }
+    if (pik->update()) {
+        if (pik->enabled) change_scene("pickagame");
+        else vo_play("GLOB_FX_wrong");
+    }
+    if (quit->update()) {
+        if (!quit_armed) {
+            vo_play("GLOB_VO_PETvquit");
+            quit_armed = true;
+        } else {
+            VoiceOver::get().stop();
+            g_quit = true;                           // 0x421620
+        }
+        return;
+    }
+    if (g_mouse.ldown || g_mouse.rdown) quit_armed = false;
+    if (sign->update()) {
+        if (!sign_armed) {
+            vo_play("GLOB_VO_PETvsgnin");
+            sign_armed = true;
+        } else {
+            VoiceOver::get().stop();
+            change_scene("signin");
+        }
+        return;
+    }
+    if (g_mouse.ldown || g_mouse.rdown) sign_armed = false;
+    if (tmap->update()) {
+        if (tmap->enabled) {
+            setMode(1);
+        } else {
+            vo_play("GLOB_FX_wrong");
+            set_cursor(st.cursor, g_cursor_graphic ? g_cursor_graphic->visible : false);
+        }
+    }
+    if (xspot->visible && xspot->update()) change_scene("treasure");
+    if (rtrn->update()) {
+        st.tutorial_skipped = true;                  // +0x7bc
+        change_scene(st.last_scene.c_str());         // +0x1830 (empty: "")
+    }
 }
 
 }  // namespace Game

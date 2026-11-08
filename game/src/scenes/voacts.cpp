@@ -73,6 +73,16 @@ void DelayedVO::run() {                            // 0x4c16c0
 }
 
 // ---------------------------------------------------------------- PreSceneVo
+// 0x4c5d60. port: the exe holds the input with the game state's service at +0x480 (one nothing listens through);
+// a service of the port's own does the same.
+void PreSceneVo::start(const char *l, const char *s) {
+    line = l ? l : "";
+    scene = s ? s : "";
+    static Task hold(nullptr);
+    g_modal_client = &hold;                        // 0x41f370
+    activate();
+}
+
 void PreSceneVo::run() {                           // 0x4c5dc0
     wait(1);
     if (g_cursor_graphic) g_cursor_graphic->visible = false;     // 0x4119e0
