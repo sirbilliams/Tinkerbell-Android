@@ -18,6 +18,9 @@
   buttons go to the credits, "pickagame" (only with the treasure), quit (asked twice), signin (asked twice), the
   treasure map, "treasure" and back (to State::last_scene). F1..F3 set the skill (the exe's developer keys).
   Test aid: TB_DEBUG_MAP=1 logs the buttons.
+- Pick-a-game room: game/src/scenes/pickagame.* PickAGame_Scene (0x4ae6a0, "pickagame"). It has fifteen
+  GameButtons (descriptors from 0x4ae270..0x4ae5f0) that set the area's spot (setAreaSpot) and go there, plus the
+  return button to the map. "GLOB_FX_butclick" isn't in the data, so it is never heard. TB_DEBUG_PICK=1.
 - Next: the areas ("indian_village" 0x467fc0, "mermaid" 0x44d9c0, "starry" 0x477b30, "skull" 0x488260), the
   "pickagame" room (0x4ae6a0), "treasure" (0x48f660), and the 3D games inside the areas.
 

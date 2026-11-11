@@ -7,6 +7,7 @@
 #include "birdspy.h"
 #include "colorthecloud.h"
 #include "firefly.h"
+#include "pickagame.h"
 #include "map.h"
 #include "state.h"
 #include "game.h"
@@ -123,6 +124,7 @@ void tb_game_register() {
     Game::firefly_scene();                                            // 0x47db70, the static at 0x5d91b0 (scenes/firefly.cpp)
     Game::lost_scene();                                               // 0x43e5b0, the static at 0x5ac4f8 (scenes/lost_scene.cpp)
     static Game::LostTutorial_Scene lost_tutorial;                   // 0x443e70 -> 0x444440 (scenes/lost.cpp)
+    Game::pickagame_scene();                                          // 0x4ae6a0, the static at 0x62a5b0 (scenes/pickagame.cpp)
     static Game::Map_Scene map_scene;                                // 0x4a52a0, the static at 0x621018 (scenes/map.cpp)
     static Game::MapTutorial_Scene map_tutorial;                     // -> 0x4a9340 (scenes/map.cpp)
     static Game::SignIn_Scene signin;                                 // 0x4afc40 (scenes/signin.cpp)
