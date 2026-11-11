@@ -21,6 +21,11 @@
 - Pick-a-game room: game/src/scenes/pickagame.* PickAGame_Scene (0x4ae6a0, "pickagame"). It has fifteen
   GameButtons (descriptors from 0x4ae270..0x4ae5f0) that set the area's spot (setAreaSpot) and go there, plus the
   return button to the map. "GLOB_FX_butclick" isn't in the data, so it is never heard. TB_DEBUG_PICK=1.
+- In progress: Starry Skies (StarrySkies_Scene vtable 0x515198, ctor 0x477b30, "starry"). Notes so far are in
+  /home/claude/scratch/star_notes.md (load2, run, the helpers 0x478340..0x478940, the ground tokens 0x477fc0).
+  Still to read: onMouse 0x472f30, onKey 0x473b90, cursorUpdate 0x4749d0, hover 0x4748a0, enter 0x474b80,
+  leave 0x475a70, 0x478340. Then the Backwards Go (0x4703e0..0x472460) and Cloud Burst games.
+  The state needs the starry tokens (TokenInfo[5] at +0x1628) with their load/save.
 - Next: the areas ("indian_village" 0x467fc0, "mermaid" 0x44d9c0, "starry" 0x477b30, "skull" 0x488260), the
   "pickagame" room (0x4ae6a0), "treasure" (0x48f660), and the 3D games inside the areas.
 
