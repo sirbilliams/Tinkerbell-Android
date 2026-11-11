@@ -92,4 +92,47 @@ void BucketMapPiece::run() {
     finish();                                        // 0x420fe0
 }
 
+void StarryMapPiece::load() {                        // 0x4e88a0
+    piece = rt->addSprite("map_piece", "CLOU_GA_MAPseg_", 1);   // 0x42d9d0
+    piece->load();                                   // 0x42ef20
+    if (piece->anim) piece->anim->visible = false;
+    poof = rt->addSprite("poof", "glob_am_ambspark_", 1);
+    poof->load();
+    if (poof->anim) poof->anim->visible = false;
+}
+
+// 0x4e8920: by the shelf (a step toward the view's direction), at its height, shown and started.
+void StarryMapPiece::show() {
+    Sprite3D *shelf = rt->findSprite("interface3D"); // 0x42dc70
+    piece->x = (float)(cos(rt->angf) + shelf->x);    // 0x42b550
+    piece->z = (float)(sin(rt->angf) + shelf->z);
+    piece->y = shelf->y;
+    piece->anim->start_time = Vision::frame_time();  // 0x403be0(0, 1)
+    piece->anim->mode = 1;
+    piece->anim->visible = true;
+    reset();                                         // 0x421110
+    activate();                                      // +0x18
+}
+
+// 0x4e89b0: to the camera; a second, the poof where it was (one step back toward the camera), a second, gone.
+void StarryMapPiece::run() {
+    wait(1);
+    fresh = true;                                    // +0xc4
+    while (ease(piece)) wait(0x1e);
+    float px = piece->x, py = piece->y, pz = piece->z;   // 0x42f700
+    float bx = (float)((double)px - cos(rt->angf));
+    float bz = (float)((double)pz - sin(rt->angf));
+    poof->setPos(bx, py, bz);                        // 0x42f740
+    poof->anim->visible = true;
+    poof->anim->setFrame(0);
+    poof->anim->start_time = Vision::frame_time();   // 0x403be0(0, 1)
+    poof->anim->mode = 1;
+    wait(1000);
+    show_anim(piece, false);
+    wait(1000);
+    show_anim(poof, false);
+    stop();                                          // v14
+    finish();                                        // 0x420fe0
+}
+
 }  // namespace Game

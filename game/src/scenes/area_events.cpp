@@ -120,9 +120,7 @@ void CharacterClick::say(bool first_time) {
         } else if (key == "CLOUD_BURST_CHAR") {      // 0x631138
             fl = f->take(0x16);
             info = st.saves.gameInfo("Cloud Burst Game");
-            int n4 = 0; bool any5 = false;
-            for (int v : st.games_star) { if (v == 4) n4++; if (v == 5) any5 = true; }
-            done = any5 || n4 == 5;                  // 0x4ee070 || 0x4ee0a0
+            done = st.anyStarry(5) || st.allStarry(4);   // 0x4ee070 || 0x4ee0a0
         } else if (key == "BUCKET_TOSS_CHAR") {      // 0x6310d8
             fl = f->take(0x17);
             info = st.saves.gameInfo("Bucket Toss Game");
@@ -240,7 +238,14 @@ void EndOfGame::award() {
     };
     if (!strcmp(a->scene, "Mermaid")) mark(st.games_mcov, g2 ? 2 : 3, 4);          // 0x4ef3a0
     else if (!strcmp(a->scene, "Indian_Village")) mark(st.games_indv, g2 ? 1 : 2, 4);   // 0x4ed6b0
-    else if (!strcmp(a->scene, "starry")) mark(st.games_star, g2 ? 2 : 1, 4);      // 0x4edd90
+    else if (!strcmp(a->scene, "starry")) {
+        int from = g2 ? 2 : 1;
+        for (TokenInfo &t : st.starry)
+            if (t.state == from) {
+                t.state = 4;
+                st.saveStarryTokens();               // 0x4edd90
+            }
+    }
     else if (!strcmp(a->scene, "lost")) {
         int from = g2 ? 3 : 2;
         for (TokenInfo &t : st.lost)
@@ -281,9 +286,7 @@ void EndOfGame::nextLine() {
             for (int v : st.games_indv) if (v == 4) n4++;
             done = n4 == 5;                          // 0x4ed990
         } else if (!strcmp(a->scene, "starry")) {
-            int n4 = 0; bool any5 = false;
-            for (int v : st.games_star) { if (v == 4) n4++; if (v == 5) any5 = true; }
-            done = n4 == 5 || any5;                  // 0x4ee0a0 || 0x4ee070
+            done = st.allStarry(4) || st.anyStarry(5);   // 0x4ee0a0 || 0x4ee070
         } else if (!strcmp(a->scene, "lost")) {
             done = st.allLost(4) || st.anyLost(5);   // 0x4eef50 || 0x4eef20
         } else {
@@ -433,7 +436,7 @@ void SignClick::run() {
         case 1: done = n_of(st.games_mcov, 5) > 0 || n_of(st.games_mcov, 4) == 5; break;   // 0x4ef6b0 / 0x4ef6e0
         case 2: done = n_of(st.games_skrl, 6) > 0 || n_of(st.games_skrl, 5) == 5; break;   // 0x4ee7c0 / 0x4ee7f0
         case 3: done = st.anyLost(5) || st.allLost(4); break;                             // 0x4eef20 / 0x4eef50
-        case 4: done = n_of(st.games_star, 5) > 0 || n_of(st.games_star, 4) == 5; break;   // 0x4ee070 / 0x4ee0a0
+        case 4: done = st.anyStarry(5) || st.allStarry(4); break;                         // 0x4ee070 / 0x4ee0a0
         case 5: done = n_of(st.games_indv, 4) == 5; break;                                // 0x4ed990
         default: break;
         }
@@ -519,7 +522,7 @@ bool SceneInactivity::allowed(int i) {
     if (k == "Bucket Toss Game") return st.allLost(4) || st.anyLost(5);
     if (k == "Shell Game") return n_of(st.games_mcov, 4) == 5 || n_of(st.games_mcov, 5) > 0;
     if (k == "Totem Trail Game") return n_of(st.games_indv, 4) == 5;
-    if (k == "Cloud Burst Game") return n_of(st.games_star, 4) == 5 || n_of(st.games_star, 5) > 0;
+    if (k == "Cloud Burst Game") return st.allStarry(4) || st.anyStarry(5);
     if (k == "Echo Echo Game") return n_of(st.games_skrl, 5) == 5 || n_of(st.games_skrl, 6) > 0;
     return false;
 }

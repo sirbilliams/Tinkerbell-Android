@@ -381,6 +381,51 @@ void State::saveLostTokens() {                       // 0x4eec40
     saves.setTokens("Lost Tokens", v);               // 0x4ea170
 }
 
+// 0x4ed9c0: Starry Skies' pieces ("Coken Tokens", 0x4e9df0); a new player's: three hidden in the area (state 3),
+// one each from Color the Clouds (2) and Backwards Go (1), at random.
+void State::loadStarryTokens() {
+    std::vector<TokenRecord> v = saves.tokens("Coken Tokens");   // 0x4e9df0 -> 0x4e9e40 (*0x5434f8)
+    if (!v.empty()) {
+        for (size_t i = 0; i < v.size() && i < 5; i++) {
+            starry[i].state = v[i].state;
+            if (v[i].easy) starry[i].setEasy(); else starry[i].setHard();
+            starry[i].x = v[i].x;
+            starry[i].y = v[i].y;
+            starry[i].z = v[i].z;
+        }
+        return;
+    }
+    for (TokenInfo &t : starry) t.state = 0;
+    HidingPlaces hp;                                 // 0x4f1110
+    hp.load("starry");                               // 0x4ecbf0
+    for (int n = 0; n < 3; n++) {
+        int r;
+        do r = Vision::vision_random(5); while (starry[r].state != 0);   // 0x425d40
+        starry[r].state = 3;
+        hp.assign(&starry[r], skill);                // 0x4ecf90 (+0x68)
+    }
+    int r;
+    do r = Vision::vision_random(5); while (starry[r].state != 0);
+    starry[r].state = 2;
+    for (TokenInfo &t : starry)
+        if (t.state == 0) { t.state = 1; break; }
+    saveStarryTokens();
+}
+
+void State::saveStarryTokens() {                     // 0x4edd90
+    std::vector<TokenRecord> v(5);
+    for (int i = 0; i < 5; i++) {
+        v[i].state = starry[i].state;
+        if (starry[i].state != 3) continue;          // only a hidden piece keeps its place (the others: the
+                                                     // exe's uninitialised local; port: zeros)
+        v[i].easy = starry[i].easy;
+        v[i].x = starry[i].x;
+        v[i].y = starry[i].y;
+        v[i].z = starry[i].z;
+    }
+    saves.setTokens("Coken Tokens", v);              // 0x4ea170
+}
+
 }  // namespace Game
 
 namespace Game {

@@ -125,6 +125,8 @@ public:
     virtual void hover();                            // v32 0x443820: the eye eases down (or up to 200)
     void charCursor();                               // 0x4abda0: the hand over one of `chars`
     void tinkHome();                                 // 0x4abb10: Tink (no wandering) flies to the state's +0x7ac
+    void tinkOn();                                   // 0x4ab5c0: Tink made again (her pack opened)
+    void tinkOff();                                  // 0x4ab660: Tink gone (her pack closed)
     void unforce() { forced_off = false; }           // v34 0x4abf70
     void allowUpDown() { force[4] = force[5] = 0; }  // 0x4aa9b0 (Raytrace_Scene's)
     bool flyThroughClouds(bool second);              // 0x4ab920: up through the cloud bank; true while flying

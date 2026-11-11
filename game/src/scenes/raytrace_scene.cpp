@@ -476,6 +476,26 @@ void TinkerbellRaytraceScene::tinkHome() {          // 0x4abb10
 void TinkerbellRaytraceScene::forceNone() { Raytrace_Scene::forceNone(); forced_off = false; }   // v23 0x4abf30
 void TinkerbellRaytraceScene::forceOff() { Raytrace_Scene::forceOff(); forced_off = true; }      // v24 0x4abf50
 
+void TinkerbellRaytraceScene::tinkOn() {             // 0x4ab5c0
+    tinkpack = ras_open("tinkerbell3D", "", &data_device());   // +0x17d0
+    tinkpack->load();
+    ras_set_current(tinkpack);
+    tink = new Tinkerbell3D(&rt, this);              // 0x4f34f3 (0x1b0), 0x4da4a0
+    tink->init();                                    // v1
+}
+
+void TinkerbellRaytraceScene::tinkOff() {            // 0x4ab660
+    if (tink) {
+        tink->release();                             // v2
+        delete tink;                                 // v0(1)
+        tink = nullptr;
+    }
+    if (tinkpack) {
+        ras_close(tinkpack);                         // 0x419620
+        tinkpack = nullptr;
+    }
+}
+
 void TinkerbellRaytraceScene::leave() {              // v20 0x4ab470 (part)
     cloud1 = cloud2 = nullptr;                       // port: 0x42f2b0 unloads them; RayTrace::release frees them
     Game::cannon().detach();                         // 0x412200

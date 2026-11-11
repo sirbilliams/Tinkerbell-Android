@@ -1,6 +1,34 @@
 # Next session
 
-## Latest (Nov 8 night, Firefly, ~69%)
+## Latest (Nov 11, Starry Skies, ~73%)
+- game/src/scenes/starry.*: StarrySkies_Scene (0x477b30, "starry", static 0x5d2c60). Cubby stands at the
+  Backwards Go sign, Peter at Color the Clouds' (that game is its own scene), Foxy at Cloud Burst's. The three
+  hidden animal pieces (State::starry, "Coken Tokens": the exe's spelling) are found with dust; the 2D bar
+  (StarryInterface2D) shows the ones won. Leaving by Peter's sign flies up to "colorthecloud".
+  - State: TokenInfo starry[5] (+0x1628) with loadStarryTokens 0x4ed9c0 (called from the sign-in save, before
+    the Lost Boys' as in the exe) and saveStarryTokens 0x4edd90; +0x7a8 back_ended; +0x64c (never read).
+  - The map piece: StarryMapPiece (0x4e8860) in mappiece.*. Tink on/off: TinkerbellRaytraceScene::tinkOn 0x4ab5c0 /
+    tinkOff 0x4ab660. Tink's "point down": Tinkerbell3D::pointDown 0x4dba20.
+- game/src/scenes/backwardsgo.*: Backwards Go (0x46fa00..0x4719a0), played in the scene. The camera stands on a
+  5 x 5 grid with Tink and the boys (2 the first time, then 5 with the raccoon twin); Cubby calls a move or a
+  backwards one; arrows, Shift up, Ctrl down. The boys copy (80..95 % by skill), a wrong one flies off; all
+  caught out wins.
+- game/src/scenes/cloudburst.*: Cloud Burst (0x478b10..0x47bc10 and the riddle pool 0x471a20..0x472120). 42
+  riddles in three groups; how many of each by skill; the animal asked about walks in, the answer is clicked on
+  the shelf (cat dog elephant mouse tiger); the fuse from the second game on.
+- Exe quirks kept: the win list has Peter's first win line three times; Cubby registered for the rabbit's calls,
+  Peter for "MCOV_VO_RABcall3", the inactivity prompts at Peter's spot are the rabbit's; "star_ax_birdwing"
+  doesn't exist; the 2D bar never unloads the elephant; the riddle pools are filled again on every game (on top
+  of what is there); MSVC 6's random_shuffle (never leaves an element in place).
+- Test aids: TB_DEBUG_STARRY=1 (signs, clicks, both games' states), TB_STARRY_TOKENS=44444 (the pieces' states),
+  TB_BACK_AUTO=1 (the right move), TB_CLOUD_AUTO=1 (the first answer). Backwards Go:
+  `TB_RT_CAM="3881,2700,90,0.1" ... TB_FAKE_INPUT="200:key 32;260:key 32;300:move 318,300;310:click 318,300"`.
+  Cloud Burst: `TB_STARRY_TOKENS=44444 TB_RT_CAM="6000,2700,0,0.1" ... "...;300:move 60,330;310:click 60,330"`.
+- Next: Indian Village ("indian_village" 0x467fc0), Mermaid Cove ("mermaid" 0x44d9c0), Skull Rock ("skull"
+  0x488260), "treasure" (0x48f660), and their games. The other areas' token loads at sign-in (0x4e6390, 0x4ed270,
+  0x4ee110, 0x4eefc0) come with them.
+
+## Earlier (Nov 8 night, Firefly, ~69%)
 - game/src/scenes/firefly.*: Firefly_Scene (0x47db70, "firefly", static 0x5d91b0; files "DCBL_").
   - Swarms drift over the ground (Swarm 0x47eb90). The jar cursor catches up to six fireflies (FireflyCursor
     0x47bda0), then a click lights a lamp or a walking turtle's lantern (BackgroundScroller 0x47f040, on
@@ -21,13 +49,6 @@
 - Pick-a-game room: game/src/scenes/pickagame.* PickAGame_Scene (0x4ae6a0, "pickagame"). It has fifteen
   GameButtons (descriptors from 0x4ae270..0x4ae5f0) that set the area's spot (setAreaSpot) and go there, plus the
   return button to the map. "GLOB_FX_butclick" isn't in the data, so it is never heard. TB_DEBUG_PICK=1.
-- In progress: Starry Skies (StarrySkies_Scene vtable 0x515198, ctor 0x477b30, "starry"). Notes so far are in
-  /home/claude/scratch/star_notes.md (load2, run, the helpers 0x478340..0x478940, the ground tokens 0x477fc0).
-  Still to read: onMouse 0x472f30, onKey 0x473b90, cursorUpdate 0x4749d0, hover 0x4748a0, enter 0x474b80,
-  leave 0x475a70, 0x478340. Then the Backwards Go (0x4703e0..0x472460) and Cloud Burst games.
-  The state needs the starry tokens (TokenInfo[5] at +0x1628) with their load/save.
-- Next: the areas ("indian_village" 0x467fc0, "mermaid" 0x44d9c0, "starry" 0x477b30, "skull" 0x488260), the
-  "pickagame" room (0x4ae6a0), "treasure" (0x48f660), and the 3D games inside the areas.
 
 ## Latest (Nov 8 night, Color the Clouds, ~67%)
 - game/src/scenes/colorthecloud.*: ColorTheCloud_Scene (0x46ce80, "colorthecloud", static 0x5d0058).

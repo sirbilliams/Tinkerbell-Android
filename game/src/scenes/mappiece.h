@@ -33,4 +33,14 @@ public:
     void run() override;                             // v10 0x4e8180
 };
 
+// Starry Skies' (vtable 0x517b34, ctor 0x4e8860, load v11 0x4e88a0, show v13 0x4e8920, run v10 0x4e89b0): Cloud
+// Burst's segment appears by the animals' shelf ("interface3D"), comes to the camera and goes in a poof.
+class StarryMapPiece : public MapPiece {
+public:
+    explicit StarryMapPiece(Raytrace::RayTrace *r) : MapPiece(r) {}   // 0x4e8860
+    void load() override;                            // v11 0x4e88a0
+    void show() override;                            // v13 0x4e8920
+    void run() override;                             // v10 0x4e89b0
+};
+
 }  // namespace Game

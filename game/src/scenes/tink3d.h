@@ -77,6 +77,7 @@ public:
     void wave();                                     // 0x4dbd90: a Tinkerbell3DCommandWave ("GLOB_CA_TNKwave_")
     void clearQueue();                               // 0x4ddf30 (on +0x50): every command deleted
     void beckon();                                   // 0x4dbb50: "GLOB_CA_TNKbeckon_"
+    void pointDown();                                // 0x4dba20: "GLOB_CA_TNKptnt_" with "GLOB_FX_TNKfly1"
     void hiya();                                     // 0x4dbe60: the wave with "GLOB_FX_TNKhiya1" (vtable 0x517644)
     void guideTo(Raytrace::Sprite3D *s);             // 0x4dc250: in front of the camera, beckon, fly over (or
                                                      // under) the sprite, wait for the player, point at it

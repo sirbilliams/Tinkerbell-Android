@@ -305,6 +305,7 @@ void Tinkerbell3D::clearQueue() {                   // 0x4ddf30
 }
 
 void Tinkerbell3D::beckon() { push(new TinkCmdAnimation("GLOB_CA_TNKbeckon_", nullptr)); }   // 0x4dbb50
+void Tinkerbell3D::pointDown() { push(new TinkCmdAnimation("GLOB_CA_TNKptnt_", "GLOB_FX_TNKfly1")); }   // 0x4dba20
 void Tinkerbell3D::hiya() { push(new TinkCmdAnimation("GLOB_CA_TNKwave_", "GLOB_FX_TNKhiya1")); }   // 0x4dbe60
 
 // 0x4dc250: a tall sprite (its middle-frame half height above y over 400) whose foot is above 600 is pointed at

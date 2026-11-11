@@ -138,7 +138,11 @@ int IndianVillageTCD::count() {                      // 0x4a6dd0: the games ende
     return n;
 }
 bool IndianVillageTCD::hasSign() { return Game::state().saves.mapSegment("Village"); }   // 0x4ea870
-int StarrySkiesTCD::count() { return count_of(Game::state().games_star, 4, 5); }        // 0x4a6eb0
+int StarrySkiesTCD::count() {                        // 0x4a6eb0
+    int g[5];
+    for (int i = 0; i < 5; i++) g[i] = Game::state().starry[i].state;
+    return count_of(g, 4, 5);
+}
 bool StarrySkiesTCD::hasSign() { return Game::state().saves.mapSegment("Starry"); }     // 0x4ea9f0
 int LostBoysTCD::count() {                           // 0x4a6fa0
     int g[5];

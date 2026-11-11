@@ -589,7 +589,7 @@ static bool cap_due() {
 // bucket's end (Peter's map prompt or the cap), the pirate flag game's end, the games' updates. A click on the mud
 // pie sign ends the loop: up through the clouds to the mud pie scene.
 void Lost_Scene::run() {
-    wait(0);
+    wait(1);                                         // 0x441a96
     State &st = Game::state();
     VoiceOver &vo = VoiceOver::get();
     if (st.start_in_london) {                        // +0x1818

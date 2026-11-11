@@ -21,6 +21,7 @@ struct TokenInfo {
     void setHard() { easy = false; }                 // v2 0x4ed240
     void setEasy() { easy = true; }                  // v3 0x4ed250
     bool hidden() const { return state == 1 && !easy; }   // 0x4ed1c0: hidden in a hard place
+    bool hiddenStarry() const { return state == 3 && !easy; }   // 0x4ed160: the same for Starry Skies' (state 3)
 };
 // A saved piece (0x14 bytes): keys "location<n>", "active<n>", "x<n>", "y<n>", "z<n>" in "<Area> Tokens".
 struct TokenRecord { int state = 0; bool easy = false; float x = 0, y = 0, z = 0; };
@@ -97,6 +98,8 @@ struct State {
     int last_game = 0, last_result = 0;             // +0x79c +0x7a0: the last mini game played and how it ended
     bool guide_loaded = false;                       // +0x7b8: a mini game's PeterGuide was loaded
     bool flag_ended = false;                         // +0x7a6: the pirate flag game ended (an EndOfGame to run)
+    bool back_ended = false;                         // +0x7a8: Backwards Go ended (the same, in Starry Skies)
+    bool back_stopped = false;                       // +0x64c: set by Backwards Go's end, cleared by its calls (never read)
     float tink_home[3] = {};                         // +0x7ac..+0x7b4 (0x4e63b0 on +0x78c): where Tink waits
     void setTinkHome(float x, float y, float z) { tink_home[0] = x; tink_home[1] = y; tink_home[2] = z; }
     bool tutorial_skipped = false;                   // +0x7bc: Escape in the Lost Boys' tutorial
@@ -107,7 +110,15 @@ struct State {
     // the areas' game records (the first int of each; 5 games per area): Indian village +0x15a0 (0x1c apart),
     // Starry skies +0x162c, Skull rock +0x16a4, Lost Boys +0x172c, Mermaid cove +0x17a4 (0x18 apart).
     // port: what fills them (the areas and the save) is not ported yet; 0 for a new player.
-    int games_indv[5] = {}, games_star[5] = {}, games_skrl[5] = {}, games_mcov[5] = {};
+    int games_indv[5] = {}, games_skrl[5] = {}, games_mcov[5] = {};
+    // Starry Skies' five animal pieces ("Coken Tokens"): 3 hidden in the area, 2 Color the Clouds', 1 Backwards
+    // Go's; 4 won, 5 all given to Cloud Burst.
+    TokenInfo starry[5];                             // +0x1628 (states at +0x162c)
+    void loadStarryTokens();                         // 0x4ed9c0
+    void saveStarryTokens();                         // 0x4edd90
+    void starryDone() { for (TokenInfo &t : starry) t.state = 5; saveStarryTokens(); saves.flush(); }   // 0x4ee0d0
+    bool anyStarry(int v) const { for (const TokenInfo &t : starry) if (t.state == v) return true; return false; }   // 0x4ee070 (5)
+    bool allStarry(int v) const { for (const TokenInfo &t : starry) if (t.state != v) return false; return true; }   // 0x4ee0a0 (4)
     TokenInfo lost[5];                               // +0x1728 (states at +0x172c)
     void loadLostTokens();                           // 0x4ee860: from the save, or hidden and handed out anew
     void saveLostTokens();                           // 0x4eec40
