@@ -1,6 +1,28 @@
 # Next session
 
-## Latest (Nov 11, Starry Skies, ~73%)
+## Latest (Nov 12, Indian Village, ~78%)
+- game/src/scenes/indianvillage.*: IndianVillage_Scene (0x467fc0, "Indian_Village", static 0x5c8b80). Peter at
+  the Bird Spy sign (leaving by it flies up to "birdspy"), the raccoon twins at Flying Hoops', Foxy at Totem
+  Trail's. Totem Trail is in the scene: five trees, each with a silhouette (or none) and a hole; the won pieces
+  (TotemInterface bar) are picked up and set in the holes; the stump checks (Foxy says how many are wrong).
+  The fuse from the second game on. TeepeeAnimations waves now and then. Peter's 3D stand-in is made each enter.
+  - State: VillageToken village[5] (+0x159c, 0x1c records with the hole slot) with loadVillageTokens 0x4ed270
+    (at sign-in, before Starry's) / saveVillageTokens 0x4ed6b0; +0x7a7 hoops_ended, +0x7a9 totem_ended.
+    games_indv is gone (area_events, map use the village records).
+  - TotemMapPiece (0x4e8410) in mappiece.*: the stump opens, the segment rises out of it.
+  - TinkerbellRaytraceScene::fadeOutBegin 0x4abab0 / fadeInEnd 0x4abae0.
+- game/src/scenes/flyinghoops.*: FlyingHoopsGame (0x4611e0, embedded at the scene's +0x4658): white/red hoops at
+  the poles and teepees, smoke over `level` fires, the "Shift/Ctrl" reminder, the fuse, the fade back to spot 1.
+- Fixed: the Database (0x424ea0) finds sections and keys ignoring case (the ambient sprites' "[indian_village]"
+  for the scene "Indian_Village").
+- Test aids: TB_DEBUG_VILLAGE=1, TB_VILLAGE_TOKENS=44444, TB_VILLAGE_TOTEM=1 (Totem Trail at once),
+  TB_HOOPS_AUTO=1 (into each hoop), TB_SEED=<n> (the random seed). Spaces at 300..500 skip the welcome.
+  Totem: `TB_SEED=1 TB_VILLAGE_TOTEM=1 TB_VILLAGE_TOKENS=44444 TB_RT_CAM="3593,4343,0,0.1"`, the bear icon at
+  620,140, tree 1's hole at 342,345. Hoops: `TB_RT_CAM="1236,4348,0,0.1"`, sign click at 318,300.
+- Next: Mermaid Cove ("mermaid" 0x44d9c0), Skull Rock ("skull" 0x488260), "treasure" (0x48f660), their games;
+  the token loads 0x4e6390, 0x4ee110, 0x4eefc0. tools/re holds the disassembly helpers.
+
+## Nov 11, Starry Skies (~73%)
 - game/src/scenes/starry.*: StarrySkies_Scene (0x477b30, "starry", static 0x5d2c60). Cubby stands at the
   Backwards Go sign, Peter at Color the Clouds' (that game is its own scene), Foxy at Cloud Burst's. The three
   hidden animal pieces (State::starry, "Coken Tokens": the exe's spelling) are found with dust; the 2D bar

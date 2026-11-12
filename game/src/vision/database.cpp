@@ -1,6 +1,7 @@
 #include "database.h"
 #include "tb.h"
 #include <stdio.h>
+#include <strings.h>
 #include <sys/stat.h>
 
 namespace Vision {
@@ -99,7 +100,7 @@ bool Database::remove() {                            // 0x4e9860
 
 Database::Section *Database::section(const std::string &name, bool create) {   // 0x4e4fb0
     for (size_t i = 0; i < sections_.size(); i++)
-        if (sections_[i].name == name) return &sections_[i];
+        if (!strcasecmp(sections_[i].name.c_str(), name.c_str())) return &sections_[i];   // 0x424ea0: tolower compare
     if (!create) return nullptr;
     sections_.push_back(Section());
     sections_.back().name = name;
@@ -110,14 +111,14 @@ const std::string *Database::get(const std::string &sec, const std::string &key)
     Section *s = section(sec, false);
     if (!s) return nullptr;
     for (size_t i = 0; i < s->entries.size(); i++)
-        if (s->entries[i].key == key) return &s->entries[i].value;   // 0x424ea0 (port: case-sensitive, unsure)
+        if (!strcasecmp(s->entries[i].key.c_str(), key.c_str())) return &s->entries[i].value;   // 0x424ea0 (tolower)
     return nullptr;
 }
 
 void Database::set(const std::string &sec, const std::string &key, const std::string &val) {
     Section *s = section(sec, true);
     for (size_t i = 0; i < s->entries.size(); i++)
-        if (s->entries[i].key == key) { s->entries[i].value = val; return; }
+        if (!strcasecmp(s->entries[i].key.c_str(), key.c_str())) { s->entries[i].value = val; return; }
     Entry e; e.key = key; e.value = val;
     s->entries.push_back(e);                          // 0x4e9a00 adds a missing key
 }

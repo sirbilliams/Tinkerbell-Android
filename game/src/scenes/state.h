@@ -23,6 +23,18 @@ struct TokenInfo {
     bool hidden() const { return state == 1 && !easy; }   // 0x4ed1c0: hidden in a hard place
     bool hiddenStarry() const { return state == 3 && !easy; }   // 0x4ed160: the same for Starry Skies' (state 3)
 };
+// Indian Village's pieces (0x1c bytes: a vtable, then as TokenInfo with the slot first). The state: 1 / 2 given by
+// Bird Spy / Flying Hoops, 3 hidden in the area, 4 won, 5 set in a hole of the totem (`slot`), 6 held (the cursor).
+struct VillageToken {
+    int state = 0;                                   // +0x04
+    int slot = 0;                                    // +0x08: the totem hole it is set in (state 5)
+    float x = 0, y = 0, z = 0;                       // +0x0c..+0x14
+    bool easy = true;                                // +0x18
+    void setPos(float px, float py, float pz) { x = px; y = py; z = pz; }   // v1 0x4ed0d0 (vtable 0x517cd4)
+    void setHard() { easy = false; }                 // v2 0x4ed0f0
+    void setEasy() { easy = true; }                  // v3 0x4ed100
+    bool hidden() const { return state == 3 && !easy; }   // 0x4ed120
+};
 // A saved piece (0x14 bytes): keys "location<n>", "active<n>", "x<n>", "y<n>", "z<n>" in "<Area> Tokens".
 struct TokenRecord { int state = 0; bool easy = false; float x = 0, y = 0, z = 0; };
 
@@ -98,7 +110,9 @@ struct State {
     int last_game = 0, last_result = 0;             // +0x79c +0x7a0: the last mini game played and how it ended
     bool guide_loaded = false;                       // +0x7b8: a mini game's PeterGuide was loaded
     bool flag_ended = false;                         // +0x7a6: the pirate flag game ended (an EndOfGame to run)
+    bool hoops_ended = false;                        // +0x7a7: Flying Hoops ended (the same, in the Indian Village)
     bool back_ended = false;                         // +0x7a8: Backwards Go ended (the same, in Starry Skies)
+    bool totem_ended = false;                        // +0x7a9: Totem Trail ended (its EndOfPuzzleGame to run)
     bool back_stopped = false;                       // +0x64c: set by Backwards Go's end, cleared by its calls (never read)
     float tink_home[3] = {};                         // +0x7ac..+0x7b4 (0x4e63b0 on +0x78c): where Tink waits
     void setTinkHome(float x, float y, float z) { tink_home[0] = x; tink_home[1] = y; tink_home[2] = z; }
@@ -110,7 +124,12 @@ struct State {
     // the areas' game records (the first int of each; 5 games per area): Indian village +0x15a0 (0x1c apart),
     // Starry skies +0x162c, Skull rock +0x16a4, Lost Boys +0x172c, Mermaid cove +0x17a4 (0x18 apart).
     // port: what fills them (the areas and the save) is not ported yet; 0 for a new player.
-    int games_indv[5] = {}, games_skrl[5] = {}, games_mcov[5] = {};
+    int games_skrl[5] = {}, games_mcov[5] = {};
+    // Indian Village's five totem pieces ("Village Tokens"): 3 hidden in the area, 1 Bird Spy's, 2 Flying Hoops'.
+    VillageToken village[5];                         // +0x159c (states at +0x15a0)
+    void loadVillageTokens();                        // 0x4ed270
+    void saveVillageTokens();                        // 0x4ed6b0
+    bool allVillage(int v) const { for (const VillageToken &t : village) if (t.state != v) return false; return true; }   // 0x4ed990 (4)
     // Starry Skies' five animal pieces ("Coken Tokens"): 3 hidden in the area, 2 Color the Clouds', 1 Backwards
     // Go's; 4 won, 5 all given to Cloud Burst.
     TokenInfo starry[5];                             // +0x1628 (states at +0x162c)

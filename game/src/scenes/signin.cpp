@@ -176,8 +176,9 @@ void SignInFrame::save(int n) {
     sv.setInt("Frame Color", n);
     Game::state().frame_color = n;                         // 0x4ef7b0(n)
     Game::state().firsts = &Game::state().players[n];      // +0x788 = +0x650 + n * 0x34
-    // port: TODO 0x4e6390, 0x4ed270, 0x4ee110 and 0x4eefc0 load the other areas' progress from the save; they
+    // port: TODO 0x4e6390, 0x4ee110 and 0x4eefc0 load the other areas' progress from the save; they
     // come with the areas' scenes (until then the rand() draws of a new player's pieces differ).
+    Game::state().loadVillageTokens();                     // 0x4ed270
     Game::state().loadStarryTokens();                      // 0x4ed9c0
     Game::state().loadLostTokens();                        // 0x4ee860
     sv.flush();                                      // 0x4e9840

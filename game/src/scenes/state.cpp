@@ -381,6 +381,54 @@ void State::saveLostTokens() {                       // 0x4eec40
     saves.setTokens("Lost Tokens", v);               // 0x4ea170
 }
 
+// 0x4ed270: Indian Village's pieces ("Village Tokens", 0x4e9e00); a new player's: three hidden in the area (state
+// 3), one from Bird Spy (1) and one from Flying Hoops (2), at random. (The saved slot is not kept.)
+void State::loadVillageTokens() {
+    std::vector<TokenRecord> v = saves.tokens("Village Tokens");   // 0x4e9e00 -> 0x4e9e40 (*0x5434e8)
+    if (!v.empty()) {
+        // port: the exe writes as many records as were read (the save holds five)
+        for (size_t i = 0; i < v.size() && i < 5; i++) {
+            village[i].state = v[i].state;
+            if (v[i].easy) village[i].setEasy(); else village[i].setHard();
+            village[i].x = v[i].x;
+            village[i].y = v[i].y;
+            village[i].z = v[i].z;
+        }
+        return;
+    }
+    for (VillageToken &t : village) t.state = 0;
+    HidingPlaces hp;                                 // 0x4f1110
+    hp.load("indian_village");                       // 0x4ecbf0
+    for (int n = 0; n < 3; n++) {
+        int r;
+        do r = Vision::vision_random(5); while (village[r].state != 0);   // 0x425d40
+        village[r].state = 3;
+        TokenInfo t;                                 // port: 0x4ecf90 calls the piece's v1 / v2 / v3 (another class)
+        hp.assign(&t, skill);                        // 0x4ecf90 (+0x68)
+        village[r].setPos(t.x, t.y, t.z);
+        if (t.easy) village[r].setEasy(); else village[r].setHard();
+    }
+    int r;
+    do r = Vision::vision_random(5); while (village[r].state != 0);
+    village[r].state = 1;
+    for (VillageToken &t : village)
+        if (t.state == 0) { t.state = 2; break; }
+    saveVillageTokens();
+}
+
+void State::saveVillageTokens() {                    // 0x4ed6b0
+    std::vector<TokenRecord> v(5);
+    for (int i = 0; i < 5; i++) {
+        v[i].state = village[i].state;
+        if (village[i].state != 3) continue;         // (the others: the exe's uninitialised local; port: zeros)
+        v[i].easy = village[i].easy;
+        v[i].x = village[i].x;
+        v[i].y = village[i].y;
+        v[i].z = village[i].z;
+    }
+    saves.setTokens("Village Tokens", v);            // 0x4ea130
+}
+
 // 0x4ed9c0: Starry Skies' pieces ("Coken Tokens", 0x4e9df0); a new player's: three hidden in the area (state 3),
 // one each from Color the Clouds (2) and Backwards Go (1), at random.
 void State::loadStarryTokens() {

@@ -124,6 +124,8 @@ public:
     void forceOff() override;                        // v24 0x4abf50
     virtual void hover();                            // v32 0x443820: the eye eases down (or up to 200)
     void charCursor();                               // 0x4abda0: the hand over one of `chars`
+    void fadeOutBegin();                             // 0x4abab0: no cursor, input paused, no moving, the fader shown
+    void fadeInEnd();                                // 0x4abae0: the cursor, input, moving back; the fader hidden
     void tinkHome();                                 // 0x4abb10: Tink (no wandering) flies to the state's +0x7ac
     void tinkOn();                                   // 0x4ab5c0: Tink made again (her pack opened)
     void tinkOff();                                  // 0x4ab660: Tink gone (her pack closed)

@@ -135,4 +135,55 @@ void StarryMapPiece::run() {
     finish();                                        // 0x420fe0
 }
 
+// 0x4e8450
+void TotemMapPiece::load() {
+    piece = rt->addSprite("map_piece", "TOTM_GA_MAPseg_", 1);   // 0x42d9d0
+    piece->load();                                   // 0x42ef20
+    if (piece->anim) piece->anim->visible = false;
+    poof = rt->addSprite("poof", "glob_am_ambspark_", 1);
+    poof->load();
+    if (poof->anim) poof->anim->visible = false;
+    stump = rt->findSprite("AA_totm_ga_totstump_01");   // 0x42dc70
+}
+
+// 0x4e8540: the segment (hidden yet) in the stump; the stump opens (once through, no attachments while it does).
+void TotemMapPiece::show() {
+    piece->x = stump->x;                             // +0x78..+0x80
+    piece->y = stump->y;
+    piece->z = stump->z;
+    piece->anim->play(0, 1);                         // 0x403be0(0, 1)
+    if (piece->anim) piece->anim->visible = false;
+    stump->setAnim("TOTM_GA_stumopen_");             // 0x42efb0
+    stump->anim->setFrame(0);                        // 0x403f20
+    stump->anim->dir = 1;                            // +0x110
+    stump->mode = 3;                                 // +0x88
+    stump->anim->mode = 0;                           // +0x104
+    reset();                                         // 0x421110
+    activate();                                      // +0x18
+}
+
+// 0x4e8610: the stump opened to its tenth frame (100 ms a frame), then the segment out of it to the camera; a
+// second, the poof where it was (one step back toward the camera), a second, gone.
+void TotemMapPiece::run() {
+    wait(1);
+    while (stump->anim->step() && stump->anim->current() < 10) wait(100);   // 0x403d60, 0x403f00
+    stump->mode = 1;                                 // +0x88
+    fresh = true;                                    // +0xc4
+    piece->anim->visible = true;
+    while (ease(piece)) wait(0x1e);                  // 0x4e73f0
+    float px = piece->x, py = piece->y, pz = piece->z;   // 0x42f700
+    float bx = (float)((double)px - cos(rt->angf));  // 0x42b550
+    float bz = (float)((double)pz - sin(rt->angf));
+    poof->setPos(bx, py, bz);                        // 0x42f740
+    poof->anim->visible = true;
+    poof->anim->setFrame(0);
+    poof->anim->play(0, 1);                          // 0x403be0(0, 1)
+    wait(1000);
+    show_anim(piece, false);
+    wait(1000);
+    show_anim(poof, false);
+    stop();                                          // v14
+    finish();                                        // 0x420fe0
+}
+
 }  // namespace Game

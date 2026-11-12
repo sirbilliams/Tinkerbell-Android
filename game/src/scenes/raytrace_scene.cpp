@@ -466,6 +466,20 @@ bool TinkerbellRaytraceScene::stateKeys() {
     return false;
 }
 
+void TinkerbellRaytraceScene::fadeOutBegin() {      // 0x4abab0
+    hide_cursor();                                   // 0x4119e0
+    paused = true;                                   // +0x128
+    forceOff();                                      // v24
+    fader->visible = true;                           // +0x124 +0x7c
+}
+
+void TinkerbellRaytraceScene::fadeInEnd() {         // 0x4abae0
+    show_cursor();                                   // 0x4119d0
+    paused = false;
+    forceNone();                                     // v23
+    fader->visible = false;
+}
+
 void TinkerbellRaytraceScene::tinkHome() {          // 0x4abb10
     tink->wanders = false;                           // +0x13c
     const float *h = Game::state().tink_home;

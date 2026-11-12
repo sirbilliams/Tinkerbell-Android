@@ -134,7 +134,7 @@ static int count_of(const int g[5], int a, int b) {
 }
 int IndianVillageTCD::count() {                      // 0x4a6dd0: the games ended as 4
     int n = 0;
-    for (int v : Game::state().games_indv) if (v == 4) n++;
+    for (const VillageToken &t : Game::state().village) if (t.state == 4) n++;
     return n;
 }
 bool IndianVillageTCD::hasSign() { return Game::state().saves.mapSegment("Village"); }   // 0x4ea870

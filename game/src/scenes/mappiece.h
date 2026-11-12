@@ -43,4 +43,17 @@ public:
     void run() override;                             // v10 0x4e89b0
 };
 
+// Indian Village's (vtable 0x517af0, ctor 0x4e8410, load v11 0x4e8450, clear v12 0x4e8520, show v13 0x4e8540,
+// stop v14 0x4e84e0, run v10 0x4e8610): Totem Trail's segment comes out of the stump as it opens. Its fields sit 4
+// further on than the others' (+0xd8 the stump, +0xdc the segment, +0xe0 the poof).
+class TotemMapPiece : public MapPiece {
+public:
+    explicit TotemMapPiece(Raytrace::RayTrace *r) : MapPiece(r) {}   // 0x4e8410
+    void load() override;                            // v11 0x4e8450
+    void clear() override { piece = poof = nullptr; stump = nullptr; }   // v12 0x4e8520
+    void show() override;                            // v13 0x4e8540
+    void run() override;                             // v10 0x4e8610
+    Raytrace::Sprite3D *stump = nullptr;             // +0xd8 "AA_totm_ga_totstump_01"
+};
+
 }  // namespace Game
