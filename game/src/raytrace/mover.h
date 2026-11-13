@@ -41,6 +41,22 @@ struct Tween {
     bool running = false;                            // +0x3c
 };
 
+// 0x4df310 / 0x4df350 (0x20 bytes): from `from` to `to` in T ms at an even pace.
+struct LinearTween {
+    void init(double f, double t, double ms) { from = f; to = t; T = ms; t0 = 0; running = true; }   // 0x4df310
+    // 0x4df350: the first call starts the clock (and gives `from`); past T, `to` and stopped
+    double value() {
+        if (t0 == 0) { t0 = Vision::frame_time(); return from; }
+        double t = (double)(uint32_t)(Vision::frame_time() - t0);   // (fild of a zero-extended qword)
+        if (t < T) return (to - from) * t / T + from;
+        running = false;
+        return to;
+    }
+    double from = 0, to = 0, T = 0;                  // +0x00 +0x08 +0x10
+    uint32_t t0 = 0;                                 // +0x18
+    bool running = false;                            // +0x1c
+};
+
 // 0x4df3d0 / 0x4df4d0 (TinkerbellRaytraceScene +0x16c0): the camera to (x, eye, z, deg) by four tweens.
 struct CameraTween {
     void start(RayTrace *rt, float x, float eye, float z, float deg, double ms);   // 0x4df3d0

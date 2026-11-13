@@ -114,6 +114,13 @@ void VoOneAfterAnother::run() {                    // 0x4cbd90
     finish();
 }
 
+void VoOneAfterAnother::stop() {                    // 0x4cbcb0
+    deactivate();                                    // +0x1c
+    if (!lines.empty() && lines.size() <= index) index--;
+    if (lines.size() <= index) return;               // port: the exe aborts (0x443180) on an empty list
+    if (vo_isPlaying(lines[index].c_str())) VoiceOver::get().stop();   // 0x4c9260
+}
+
 // ---------------------------------------------------------------- QuestionRepeater
 QuestionRepeater::QuestionRepeater() : Task(nullptr) { mouse.setClient(this); }   // 0x4c5f00
 void QuestionRepeater::start(const char *l) {      // 0x4c5fa0

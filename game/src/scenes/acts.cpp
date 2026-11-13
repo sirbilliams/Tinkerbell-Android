@@ -164,4 +164,74 @@ void PauseOver::run() {
     }
 }
 
+// ---------------------------------------------------------------- RepeatLine, PromptLine, ComeNear
+RepeatLine::RepeatLine(const char *l, uint32_t m) : Act(nullptr), ms(m), line(l ? l : "") {}   // 0x4c4af0
+
+void RepeatLine::start() {                          // 0x4c4b80
+    activate();                                      // +0x18
+    next = frame_time() + ms;
+}
+
+// 0x4c4ba0: every 100 ms; past the time with no voice-over busy, the line, and the time again.
+void RepeatLine::run() {
+    wait(1);
+    for (;;) {
+        wait(100);
+        if (frame_time() <= next) continue;
+        if (g_vo_suppressed()) continue;             // +0x560
+        VoiceOver::get().play(line.c_str());         // 0x4c9400
+        next = frame_time() + ms;
+    }
+}
+
+PromptLine::PromptLine(const char *l, uint32_t m) : Act(nullptr), ms(m), line(l ? l : "") {   // 0x4c4c70
+    mouse.setClient(this);                           // 0x41f290
+}
+
+void PromptLine::start() {                          // 0x4c4d20
+    mouse.activate();
+    activate();
+    next = frame_time() + ms;
+}
+
+void PromptLine::stop() {                           // 0x4c4d50
+    mouse.deactivate();
+    deactivate();
+}
+
+void PromptLine::run() {                            // 0x4c4d70
+    wait(1);
+    for (;;) {
+        wait(100);
+        if (frame_time() <= next) continue;
+        if (g_vo_suppressed()) continue;
+        VoiceOver::get().play(line.c_str());
+        next = frame_time() + ms;
+    }
+}
+
+void PromptLine::notify2(Service *) { next = frame_time() + ms; }   // 0x4c4e40
+
+bool PromptLine::isPlaying() { return VoiceOver::get().isPlaying(line.c_str()); }   // 0x4c4e60
+
+ComeNear::ComeNear(Raytrace::RayTrace *r, const char *l1, const char *l2) : Act(nullptr), rt(r) {   // 0x4c1360
+    lines.add(l1);                                   // 0x4cc0d0
+    lines.add(l2);
+}
+
+// 0x4c1410: while the camera is farther than z 4184, the next line every 10 s; then it stops.
+void ComeNear::run() {
+    wait(1);
+    next = frame_time() + 10000;
+    while (rt->camz > 4184.0f) {                     // 0x42b540, 0x517070
+        wait(0);
+        if (frame_time() > next) {
+            lines.playNext();                        // 0x4cc0e0
+            next = frame_time() + 10000;
+        }
+    }
+    deactivate();                                    // +0x1c
+    finish();                                        // 0x420fe0
+}
+
 }  // namespace Game

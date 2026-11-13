@@ -1,6 +1,21 @@
 # Next session
 
-## Latest (Nov 13, Skull Rock, ~86%)
+## Latest (Nov 13, the treasure, ~88%)
+- game/src/scenes/treasure.*: Treasure_Scene (0x48f660, "treasure", static 0x5f6d50), reached from the map's X spot.
+  The door's tile puzzle: 16 tiles ("gridNN" attachments), 5 slots ("answerKJJ"); Peter's clue for the next slot
+  every 10 s ("WAMI_VO_PETclue<n>", "H" for the hard ones: 2/3/4 of them by skill); the bell sends Tink to the tile.
+  Right: tada, the door opens (WamiMovie3), the ending (WamiMovie2); wrong: Hook's "too bad", a new puzzle.
+- game/src/scenes/wamichar.*: WamiBaseChar (0x4d0190: Hook, Smee) and WamiChar (0x4d2170: Peter, Wendy): animation
+  queues, lines said on an animation (sayOn), per-line mouths, rest mouths, blinking eyes.
+- game/src/scenes/wamimovie.*: WamiMovie (0x4933b0, the intro: walk forward to start it), WamiMovie2 (0x495140, the
+  clock scares Hook off, Peter flies off: click him; the sign-in room), Movie2Ending, SmoothRunner, WamiMovie3,
+  BellBehindPixieDust. acts.*: RepeatLine 0x4c4af0, PromptLine 0x4c4c70, ComeNear 0x4c1360. mover.h: LinearTween.
+- Test aids: TB_DEBUG_TREASURE (lines, puzzle, skip key), TB_TREASURE_PUZZLE="0,5,10,15,3" (the tiles wanted).
+  Grid cells at x 255/300/345/390, y 60/105/150/195; slots at x 207/263/320/377/433, y 345; the bell at 45,435.
+  Skip the intro with Q (`300:key 81,0`), clicks from frame 1200; the ending waits for a click on Peter (280,250).
+- Next: the token load 0x4e6390.
+
+## Nov 13, Skull Rock (~86%)
 - game/src/scenes/skull.*: Skull_Scene (0x488260, "skull", static 0x5dac88). The rabbit at Echo Echo's sign, Peter
   at Firefly's (leaving by it flies up to "firefly"), the skunk at Shadow Boxing's. Three GemSigns, a drip or a bat
   now and then (neither sound is in the data), the instruments' bar (TokenInterface "ECHO_IF_interface_").

@@ -592,4 +592,8 @@ void Tinkerbell3D::update() {
     if (!queue.empty()) moreDust();
 }
 
+void Tinkerbell3D::blowKiss() {                      // 0x4dbf90 (the command built inline: id from 0x542928)
+    push(new TinkCmdAnimation("WAMI_CA_TNKblowks_", nullptr));   // 0x4de160
+}
+
 }  // namespace Game

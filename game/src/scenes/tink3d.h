@@ -84,6 +84,7 @@ public:
     void toAttachment(Raytrace::Attachment *a);     // 0x4db660: over (or under) it, pointing at it
     void toMap();                                    // 0x4db5b0: off to the left, point down (at the map icon)
     void noHelp();                                   // 0x4dc1d0: in front of the camera, the hiya wave
+    void blowKiss();                                 // 0x4dbf90: "WAMI_CA_TNKblowks_" (no sound)
     void ahead(float *x, float *z, float d);         // 0x4da8f0: d in front of the camera
     // 0x4da950: (x, z) moved r along `deg` (degrees)
     static void polar(float x, float z, float *ox, float *oz, float deg, float r);

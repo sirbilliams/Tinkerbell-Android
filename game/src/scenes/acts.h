@@ -5,9 +5,16 @@
 //                  stop 0x4c4690, notify2 0x4c4860, run 0x4c48c0, isPlaying 0x4c4aa0
 //   PauseOver      vtable 0x5160a8 (Act): the mouse resting on a graphic for `delay` ms plays a line once
 //                  ctor 0x4c58e0, set 0x4c5970, start 0x4c59c0, stop 0x4c59f0, run 0x4c5a60
+//   RepeatLine     vtable 0x517118 (Act): every `ms` of silence its line   ctor 0x4c4af0, start 0x4c4b80, run 0x4c4ba0
+//   PromptLine     vtable 0x517154 (Act): the same, a click restarts the wait   ctor 0x4c4c70, start 0x4c4d20,
+//                  stop 0x4c4d50, run 0x4c4d70, notify2 0x4c4e40, isPlaying 0x4c4e60
+//   ComeNear       vtable 0x517044 (Act): until the camera comes near (z <= 4184) its two lines in turn every 10 s
+//                  ctor 0x4c1360, run 0x4c1410
 #pragma once
 #include "../vision/act.h"
 #include "../vision/faderect.h"
+#include "../raytrace/raytrace.h"
+#include "voacts.h"
 #include <string>
 #include <vector>
 
@@ -60,6 +67,42 @@ public:
     uint32_t over_since = 0;                         // +0x104
     uint32_t delay = 0;                              // +0x108
     int played = 0;                                  // +0x10c
+};
+
+class RepeatLine : public Act {
+public:
+    RepeatLine(const char *line, uint32_t ms);       // 0x4c4af0
+    void start() override;                           // +0x30 0x4c4b80
+    void stop() override { deactivate(); }           // +0x34 0x4c1400
+    void run() override;                             // 0x4c4ba0
+    uint32_t next = 0;                               // +0xc0
+    uint32_t ms;                                     // +0xc4
+    std::string line;                                // +0xc8
+};
+
+class PromptLine : public Act {
+public:
+    PromptLine(const char *line, uint32_t ms);       // 0x4c4c70
+    void start() override;                           // +0x30 0x4c4d20
+    void stop() override;                            // +0x34 0x4c4d50
+    void run() override;                             // 0x4c4d70 (as 0x4c4ba0)
+    void notify2(Service *s) override;               // +0x24 0x4c4e40
+    bool isPlaying();                                // 0x4c4e60
+    uint32_t next = 0;                               // +0xc0
+    uint32_t ms;                                     // +0xc4
+    std::string line;                                // +0xc8
+    Mouse mouse;                                     // +0xd4
+};
+
+class ComeNear : public Act {
+public:
+    ComeNear(Raytrace::RayTrace *rt, const char *l1, const char *l2);   // 0x4c1360
+    void start() override { reset(); activate(); }   // (0x4c19e0, the shared start)
+    void stop() override { deactivate(); }           // +0x34 0x4c1400
+    void run() override;                             // 0x4c1410
+    Raytrace::RayTrace *rt;                          // +0xc0
+    VoList lines;                                    // +0xc4
+    uint32_t next = 0;                               // +0xf8
 };
 
 }  // namespace Game

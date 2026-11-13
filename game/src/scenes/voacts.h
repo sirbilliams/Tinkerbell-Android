@@ -67,6 +67,8 @@ public:
     VoOneAfterAnother() : Task(nullptr) {}
     void add(const char *line) { lines.push_back(line); }   // 0x4cba80
     void run() override;                // 0x4cbd90: plays the lines one after the other (checks every 100 ms)
+    void start() { reset(); activate(); }   // 0x4c19e0 (the shared start)
+    void stop();                        // 0x4cbcb0: and its current line stopped
     std::vector<std::string> lines;     // +0xc4
     uint32_t index = 0;                 // +0xd0
 };

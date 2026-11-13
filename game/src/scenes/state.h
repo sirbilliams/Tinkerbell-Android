@@ -69,6 +69,7 @@ public:
     bool tutorialsPassed(bool *out);                 // 0x4ea4f0 (globals: "Tutorials Passed")
     void setTutorialsPassed(bool v);                 // 0x4ea570 ("true" / "")
     bool hasTreasure(bool *out);                     // 0x4eae10 ("Has Treasure")
+    void setTreasure(bool v) { cur->set("Tinkerbell Globals", "Has Treasure", v ? "true" : ""); }   // 0x4eadc0
     bool hasCap();                                   // 0x4e9af0: all fifteen games' "Info" 2
     bool hasPetersCap() { bool b = false; return flag(cur, "Has Peter's Cap", &b) && b; }   // 0x4ead40
     void setPetersCap(bool v) { cur->set("Tinkerbell Globals", "Has Peter's Cap", v ? "true" : ""); }   // 0x4eacf0
