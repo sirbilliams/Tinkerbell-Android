@@ -1,6 +1,35 @@
 # Next session
 
-## Latest (Nov 12, Indian Village, ~78%)
+## Latest (Nov 12 night, Mermaid Cove, ~82%)
+- game/src/scenes/mermaid.*: Mermaid_Scene (0x44d9c0, "Mermaid", static 0x5ba320). Cubby at the Pearl Toss sign,
+  the rabbit at Coconuts Away's (leaving by it flies up to "coconut"), the skunk at the Shell Game's. The two
+  mermaids sit on their rocks (idle sprites); MermaidTokensInterface shows the shells won (hidden during Pearl
+  Toss). Signs light under the mouse (pick range 975: walk close). A gull sound now and then ("mcov_ax_gull" isn't
+  in the data). The map icon leaves at once unless a game is on.
+  - State: TokenInfo mcov[5] (+0x17a0, "Mermaid Tokens") with loadMermaidTokens 0x4eefc0 (at sign-in, after the
+    Lost Boys') / saveMermaidTokens 0x4ef3a0, mermaidDone 0x4ef710; +0x7a4 pearl_ended. games_mcov is gone.
+  - ShellMapPiece (0x4e7500) in mappiece.*: the log opens, the segment rises out of it.
+  - New engine bits: Attachment::setPrefix 0x42e4f0 (and its prefix), RayTrace::floorDist 0x42e400, addBarrier
+    0x42d7d0, TinkerbellRaytraceScene::uiCursor 0x4abb70 (+0x2830 over_ui), Service::notifyClient 0x41f1f0,
+    PlayVos::start 0x4c5c60, scenes/shuffle.h (MSVC random_shuffle).
+- game/src/scenes/pearltoss.*: Pearl Toss (monitor 0x4546b0 at the scene's +0x2900, five PearlToss 0x453760, the
+  mermaid pair 0x5c3b60). Pearls knock coconuts off five trees; click them (basket cursor) before they fall; some
+  tosses miss and fly past. Eight catches before the fuse win; pace and fuse by skill and a win before.
+  - Exe quirks kept: the pearl's arc goes into z, the miss's into the height; the miss's 20th height reads past
+    its table (the next stack slot, dx); a ninth catch shows the bar's image; Cubby's help after every 3rd stray
+    click and after 5 tosses without a catch.
+- game/src/scenes/shellgame.*: the Shell Game (0x456750 at +0x44a8). The five shells won go from the log's left
+  row into the board's five holes in a random order; the target button checks (wrong ones go back left; the
+  hint is the least hinted wrong hole). The fuse only after a win. The skunk's "nice" lines every 12 s (the exe's
+  PlayVos). Starting needs a shell set to 5 (the sign click does it when all are 4).
+- Test aids: TB_DEBUG_MERMAID=1 (signs, clicks, games), TB_MERMAID_TOKENS=44444, TB_SHELL_AUTO=1 (every shell in
+  its hole). In dev mode (a command line) Escape quits, the skip key is Q (81).
+  Pearl Toss: `TB_RT_CAM="3200,3500,90,0.1"`, sign at 368,285, coconuts at x 150/240/352/490/610 y ~176.
+  Shell Game: `TB_MERMAID_TOKENS=44444 TB_RT_CAM="3300,2600,220,0.1"`, sign at 282,290, button at 40,268.
+  Rabbit's sign: `TB_RT_CAM="5000,2400,0,0.1"`, sign at 400,310.
+- Next: Skull Rock ("skull" 0x488260, tokens 0x4ee110), "treasure" (0x48f660), the token load 0x4e6390.
+
+## Nov 12, Indian Village (~78%)
 - game/src/scenes/indianvillage.*: IndianVillage_Scene (0x467fc0, "Indian_Village", static 0x5c8b80). Peter at
   the Bird Spy sign (leaving by it flies up to "birdspy"), the raccoon twins at Flying Hoops', Foxy at Totem
   Trail's. Totem Trail is in the scene: five trees, each with a silhouette (or none) and a hole; the won pieces

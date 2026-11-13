@@ -152,7 +152,7 @@ int LostBoysTCD::count() {                           // 0x4a6fa0
 bool LostBoysTCD::hasSign() { return Game::state().saves.mapSegment("Lost"); }          // 0x4ea970 (inlined)
 int SkullRockTCD::count() { return count_of(Game::state().games_skrl, 5, 6); }          // 0x4a7090
 bool SkullRockTCD::hasSign() { return Game::state().saves.mapSegment("Skull"); }        // 0x4ea8f0
-int MermaidCoveTCD::count() { return count_of(Game::state().games_mcov, 4, 5); }        // 0x4a7180
+int MermaidCoveTCD::count() { int n = 0; for (const TokenInfo &t : Game::state().mcov) if (t.state == 4 || t.state == 5) n++; return n; }        // 0x4a7180
 bool MermaidCoveTCD::hasSign() { return Game::state().saves.mapSegment("Mermaid"); }    // 0x4ea7f0
 
 // ---------------------------------------------------------------- Credits

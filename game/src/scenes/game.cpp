@@ -5,6 +5,7 @@
 #include "mudpie.h"
 #include "coconut.h"
 #include "birdspy.h"
+#include "mermaid.h"
 #include "indianvillage.h"
 #include "colorthecloud.h"
 #include "firefly.h"
@@ -121,6 +122,7 @@ void tb_game_register() {
     static MovieScene intro("Intro", "LOND_MO_intro", "signin");     // 0x48b150
     Game::mudpie_scene();                                             // 0x436fb0, the static at 0x5a96a0 (scenes/mudpie.cpp)
     Game::coconut_scene();                                            // 0x449410, the static at 0x5b70f0 (scenes/coconut.cpp)
+    Game::mermaid_scene();                                            // 0x44d9c0, the static at 0x5ba320 (scenes/mermaid.cpp)
     Game::birdspy_scene();                                            // 0x459f50, the static at 0x5c3d08 (scenes/birdspy.cpp)
     Game::village_scene();                                            // 0x467fc0, the static at 0x5c8b80 (scenes/indianvillage.cpp)
     Game::colorthecloud_scene();                                      // 0x46ce80, the static at 0x5d0058 (scenes/colorthecloud.cpp)

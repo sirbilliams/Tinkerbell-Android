@@ -186,4 +186,68 @@ void TotemMapPiece::run() {
     finish();                                        // 0x420fe0
 }
 
+// 0x4e7540: the lid on the log (off, its frames slow), the segment and the poof (hidden).
+void ShellMapPiece::load() {
+    lid = rt->findSprite("AA_shel_ga_woodlog_01")->attach("SHEL_GA_logopen_", "SHEL_GA_logopen_", -1);   // 0x42f390
+    lid->on = false;                                 // +0x17c
+    lid->period = 999999;                            // +0x184
+    piece = rt->addSprite("map_piece", "SHEL_GA_MAPseg_", 1);
+    piece->load();
+    if (piece->anim) piece->anim->visible = false;
+    poof = rt->addSprite("poof", "glob_am_ambspark_", 1);
+    poof->load();
+    if (poof->anim) poof->anim->visible = false;
+}
+
+void ShellMapPiece::stop() {                         // v14 0x4e75f0
+    if (!busy()) return;
+    deactivate();                                    // +0x1c
+    lid->on = false;
+    if (piece->anim) piece->anim->visible = false;
+    if (poof->anim) poof->anim->visible = false;
+}
+
+// 0x4e7660: the segment (hidden yet) at the log.
+void ShellMapPiece::show() {
+    Sprite3D *log = rt->findSprite("AA_shel_ga_woodlog_01");
+    piece->setPos(log->x, log->y, log->z);           // 0x42f700, 0x42f740
+    piece->mode = 3;                                 // +0x88
+    piece->anim->setFrame(0);                        // 0x403f20
+    piece->anim->play(0, 1);                         // 0x403be0(0, 1)
+    reset();                                         // 0x421110
+    activate();                                      // +0x18
+}
+
+// 0x4e76f0: the lid opens (30 ms a frame) and then plays back closed while the segment rises to the camera (the lid
+// off once closed); the poof, as the others'.
+void ShellMapPiece::run() {
+    wait(1);
+    Vision::Animation *g = static_cast<Vision::Animation *>(lid->g);   // +0x150
+    g->setFrame(0);
+    g->mode = 0;                                     // +0x104
+    lid->on = true;
+    while (g->step() && g->current() + 1 != g->count()) wait(0x1e);   // 0x403d60, 0x403f00, 0x403c10
+    g->dir = -1;                                     // +0x110
+    g->play(0, 0);                                   // 0x403be0(0, 0)
+    piece->anim->visible = true;
+    fresh = true;                                    // +0xc4
+    while (ease(piece)) {                            // 0x4e73f0
+        if (g->current() == 0) lid->on = false;
+        wait(0x1e);
+    }
+    float px = piece->x, py = piece->y, pz = piece->z;
+    float bx = (float)((double)px - cos(rt->angf));  // 0x42b550
+    float bz = (float)((double)pz - sin(rt->angf));
+    poof->setPos(bx, py, bz);
+    poof->anim->visible = true;
+    poof->anim->setFrame(0);
+    poof->anim->play(0, 1);
+    wait(1000);
+    piece->anim->visible = false;
+    wait(1000);
+    poof->anim->visible = false;
+    stop();                                          // v14
+    finish();                                        // 0x420fe0
+}
+
 }  // namespace Game

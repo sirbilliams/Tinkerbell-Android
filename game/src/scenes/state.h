@@ -109,6 +109,7 @@ struct State {
     int dust = 0;                                    // +0x3c8: the pixie dust in the bag (0..50)
     int last_game = 0, last_result = 0;             // +0x79c +0x7a0: the last mini game played and how it ended
     bool guide_loaded = false;                       // +0x7b8: a mini game's PeterGuide was loaded
+    bool pearl_ended = false;                        // +0x7a4: Pearl Toss ended (the Mermaid scene's run takes it)
     bool flag_ended = false;                         // +0x7a6: the pirate flag game ended (an EndOfGame to run)
     bool hoops_ended = false;                        // +0x7a7: Flying Hoops ended (the same, in the Indian Village)
     bool back_ended = false;                         // +0x7a8: Backwards Go ended (the same, in Starry Skies)
@@ -124,7 +125,7 @@ struct State {
     // the areas' game records (the first int of each; 5 games per area): Indian village +0x15a0 (0x1c apart),
     // Starry skies +0x162c, Skull rock +0x16a4, Lost Boys +0x172c, Mermaid cove +0x17a4 (0x18 apart).
     // port: what fills them (the areas and the save) is not ported yet; 0 for a new player.
-    int games_skrl[5] = {}, games_mcov[5] = {};
+    int games_skrl[5] = {};
     // Indian Village's five totem pieces ("Village Tokens"): 3 hidden in the area, 1 Bird Spy's, 2 Flying Hoops'.
     VillageToken village[5];                         // +0x159c (states at +0x15a0)
     void loadVillageTokens();                        // 0x4ed270
@@ -144,6 +145,14 @@ struct State {
     void lostDone() { for (TokenInfo &t : lost) t.state = 5; saveLostTokens(); saves.flush(); }   // 0x4eef80
     bool anyLost(int v) const { for (const TokenInfo &t : lost) if (t.state == v) return true; return false; }   // 0x4eef20 (5)
     bool allLost(int v) const { for (const TokenInfo &t : lost) if (t.state != v) return false; return true; }   // 0x4eef50 (4)
+    // Mermaid Cove's five shells ("Mermaid Tokens"): 1 hidden in the area, 2 Coconuts Away's, 3 Pearl Toss's, 4 won,
+    // 5 the Shell Game won with them.
+    TokenInfo mcov[5];                               // +0x17a0 (states at +0x17a4)
+    void loadMermaidTokens();                        // 0x4eefc0
+    void saveMermaidTokens();                        // 0x4ef3a0
+    void mermaidDone() { for (TokenInfo &t : mcov) t.state = 5; saveMermaidTokens(); saves.flush(); }   // 0x4ef710
+    bool anyMermaid(int v) const { for (const TokenInfo &t : mcov) if (t.state == v) return true; return false; }   // 0x4ef6b0 (5)
+    bool allMermaid(int v) const { for (const TokenInfo &t : mcov) if (t.state != v) return false; return true; }   // 0x4ef6e0 (4)
     bool hover_up = false, hover_down = false;       // +0x75 +0x76: the 3D eye rises to 200 / stays
     bool enter_released = true;                      // +0x77
     Saves saves;                                     // +0x3cc

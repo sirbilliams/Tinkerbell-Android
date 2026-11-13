@@ -32,6 +32,7 @@ class PlayVos : public Task {
 public:
     explicit PlayVos(VoList *list, uint32_t period = 12000) : Task(nullptr), list(list), period(period) {}
     void run() override;                // 0x4c5c80: every `period` ms plays the next line of the list
+    void start() { activate(); next = frame_time() + period; }   // 0x4c5c60 (no reset)
     VoList *list;                       // +0xc0
     uint32_t next = 0;                  // +0xc4
     uint32_t period;                    // +0xc8 (12000 in the shell game)

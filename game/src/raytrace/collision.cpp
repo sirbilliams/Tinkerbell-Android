@@ -297,6 +297,19 @@ bool RayTrace::canSlide(float x, float z) {
     return boxAt(x, z) == nullptr;
 }
 
+// 0x42d7d0: a barrier line (0x40 bytes) at the end of the list.
+void RayTrace::addBarrier(const char *name, float x1, float z1, float x2, float z2, float y0, float y1) {
+    Barrier *b = new Barrier;                        // 0x4f34f3
+    b->name = name;
+    b->line.x1 = x1;
+    b->line.z1 = z1;
+    b->line.x2 = x2;
+    b->line.z2 = z2;
+    b->y0 = y0;
+    b->y1 = y1;
+    barriers.push_back(b);
+}
+
 // 0x42d700: does the move (x1, z1) -> (x2, z2) at height y cross a barrier line (+0x1158)?
 bool RayTrace::barrierHit(float x1, float z1, float x2, float z2, float y) {
     Line m = { x1, z1, x2, z2 };

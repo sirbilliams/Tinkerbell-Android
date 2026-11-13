@@ -103,6 +103,7 @@ Attachment *Sprite3D::attach(const char *n, const char *p, int gz) {
     Attachment *a = new Attachment();
     Vision::Animation *an = new Vision::Animation(p);
     a->name = n;
+    a->prefix = p;                                   // +0x08
     a->period = 50;                                  // +0x184
     a->frame = -1;                                   // +0x180
     an->load();                                      // v15
@@ -120,6 +121,24 @@ Attachment *Sprite3D::attach(const char *n, const char *p, int gz) {
         a->prev = e;
     }
     return a;
+}
+
+void Attachment::setPrefix(const char *p) {         // 0x42e4f0
+    if (strcasecmp(prefix.c_str(), p) == 0) return;  // 0x423840
+    prefix = p;
+    Vision::Animation *an = static_cast<Vision::Animation *>(g);
+    if (!an) return;
+    bool o = on;                                     // +0x17c
+    int m = an->mode;                                // +0x134 (+0x104 of the animation)
+    an->unload();                                    // v16
+    an->prefix = p;
+    an->setName(p);                                  // 0x424400
+    an->load();                                      // v15
+    an->mode = 1;
+    an->setHit(1, true);                             // v6
+    last = Vision::frame_time();                     // +0x04
+    an->mode = m;
+    on = o;
 }
 
 void Sprite3D::preload(const char *p) {             // 0x42edd0

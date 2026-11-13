@@ -144,6 +144,10 @@ public:
     bool forced_off = false;                         // +0x17c8: the last of v23 / v24 was v24
     std::vector<Raytrace::RayTraceCharacter *> chars;   // +0x2820: the scene's characters (the cursor's 0x4abda0)
     bool leaving = false;                            // +0x2831: set by a scene's run on its way out (read by others)
+    bool over_ui = false;                            // +0x2830: uiCursor's last answer (a button or character)
+    // 0x4abb70: the cursor the corner buttons ask for (the dust while dusting; the hand over the map, the bag when
+    // shown, the bell, or a character while the plain cursor is up), else none; remembered in over_ui.
+    Vision::Graphic *uiCursor();
     bool busy = false;                               // +0x28e0: a scene's intro runs (London: the fade-in)
     Vision::FadeRect dim;                            // +0x2838: full screen, depth -1000
     Raytrace::Sprite3D *cloud1 = nullptr, *cloud2 = nullptr;   // +0x2748 +0x274c (the same sprite)

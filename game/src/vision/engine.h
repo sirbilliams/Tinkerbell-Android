@@ -45,6 +45,10 @@ public:
     virtual void notify(Service *) {}                // +0x20 (0x402b80): event from a client's service
     virtual void notify2(Service *) {}               // +0x24
     void setClient(Service *c) { client = c; }       // 0x41f290
+    void notifyClient() {                            // 0x41f1f0: tell this service's own client
+        if (client) { client->notify(this); client->notify2(this); }
+        else vision_log("Null client for service %s.", name());
+    }
     Node *node = nullptr;                            // +0x28
     Service *client = nullptr;                       // +0x2c
     int field30 = 0x1d626;                           // +0x30

@@ -108,9 +108,7 @@ void CharacterClick::say(bool first_time) {
         if (key == "SHELL_CHAR") {                   // 0x631108 (the exe tests Pearl Toss's flag here)
             fl = f->take(0x14);
             info = st.saves.gameInfo("Shell Game");
-            int n4 = 0; bool any5 = false;
-            for (int v : st.games_mcov) { if (v == 4) n4++; if (v == 5) any5 = true; }
-            done = any5 || n4 == 5;                  // 0x4ef6b0 || 0x4ef6e0
+            done = st.anyMermaid(5) || st.allMermaid(4);   // 0x4ef6b0 || 0x4ef6e0
         } else if (key == "ECHO_ECHO_CHAR") {        // 0x631188
             fl = f->take(0x15);
             info = st.saves.gameInfo("Echo Echo Game");
@@ -234,7 +232,14 @@ void EndOfGame::award() {
         for (int i = 0; i < 5; i++)
             if (recs[i] == from) recs[i] = to;       // and the area's save each time (TODO)
     };
-    if (!strcmp(a->scene, "Mermaid")) mark(st.games_mcov, g2 ? 2 : 3, 4);          // 0x4ef3a0
+    if (!strcmp(a->scene, "Mermaid")) {
+        int from = g2 ? 2 : 3;
+        for (TokenInfo &t : st.mcov)
+            if (t.state == from) {
+                t.state = 4;
+                st.saveMermaidTokens();              // 0x4ef3a0
+            }
+    }
     else if (!strcmp(a->scene, "Indian_Village")) {
         int from = g2 ? 1 : 2;
         for (VillageToken &t : st.village)
@@ -283,9 +288,7 @@ void EndOfGame::nextLine() {
         else if (st.last_game == 3) info = st.saves.gameInfo(a->game2);
         bool done;
         if (!strcmp(a->scene, "Mermaid")) {
-            int n4 = 0; bool any5 = false;
-            for (int v : st.games_mcov) { if (v == 4) n4++; if (v == 5) any5 = true; }
-            done = n4 == 5 || any5;                  // 0x4ef6e0 || 0x4ef6b0
+            done = st.allMermaid(4) || st.anyMermaid(5);   // 0x4ef6e0 || 0x4ef6b0
         } else if (!strcmp(a->scene, "Indian_Village")) {
             done = st.allVillage(4);                 // 0x4ed990
         } else if (!strcmp(a->scene, "starry")) {
@@ -436,7 +439,7 @@ void SignClick::run() {
         bool done = true;
         auto n_of = [](const int *a, int v) { int n = 0; for (int i = 0; i < 5; i++) if (a[i] == v) n++; return n; };
         switch (g.area) {
-        case 1: done = n_of(st.games_mcov, 5) > 0 || n_of(st.games_mcov, 4) == 5; break;   // 0x4ef6b0 / 0x4ef6e0
+        case 1: done = st.anyMermaid(5) || st.allMermaid(4); break;   // 0x4ef6b0 / 0x4ef6e0
         case 2: done = n_of(st.games_skrl, 6) > 0 || n_of(st.games_skrl, 5) == 5; break;   // 0x4ee7c0 / 0x4ee7f0
         case 3: done = st.anyLost(5) || st.allLost(4); break;                             // 0x4eef20 / 0x4eef50
         case 4: done = st.anyStarry(5) || st.allStarry(4); break;                         // 0x4ee070 / 0x4ee0a0
@@ -523,7 +526,7 @@ bool SceneInactivity::allowed(int i) {
     auto n_of = [](const int *a, int v) { int n = 0; for (int j = 0; j < 5; j++) if (a[j] == v) n++; return n; };
     if (k == "") return true;
     if (k == "Bucket Toss Game") return st.allLost(4) || st.anyLost(5);
-    if (k == "Shell Game") return n_of(st.games_mcov, 4) == 5 || n_of(st.games_mcov, 5) > 0;
+    if (k == "Shell Game") return st.allMermaid(4) || st.anyMermaid(5);
     if (k == "Totem Trail Game") return st.allVillage(4);
     if (k == "Cloud Burst Game") return st.allStarry(4) || st.anyStarry(5);
     if (k == "Echo Echo Game") return n_of(st.games_skrl, 5) == 5 || n_of(st.games_skrl, 6) > 0;

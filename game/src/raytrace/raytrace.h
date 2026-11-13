@@ -5,6 +5,7 @@
 #pragma once
 #include "../vision/engine.h"
 #include "../vision/animation.h"
+#include <math.h>
 #include <stdint.h>
 #include <string>
 #include <vector>
@@ -97,6 +98,9 @@ struct Attachment {
     int frame = -1;
     int period = -1;                                // +0x184: ms per frame step (-1: not stepped)
     uint32_t last = 0;                              // +0x04
+    std::string prefix;                             // +0x08: the animation's frames' prefix
+    // 0x42e4f0: another animation (another prefix, ignoring case) in its place, loaded, keeping on and the mode
+    void setPrefix(const char *p);
 };
 
 // A sprite standing in the 3D world (0x42e990, 0xb0 bytes): an animation at (x, z), y up, drawn scaled by distance.
@@ -144,6 +148,7 @@ struct Box {
 struct Barrier {
     Line line;
     float y0 = 0, y1 = 0;                           // +0x10 +0x14
+    std::string name;                               // +0x18 (0x28 bytes in the exe)
 };
 
 class RayTrace : public Vision::Screen {
@@ -199,6 +204,7 @@ public:
     bool canMove(float x, float z);                 // 0x42b580
     bool canSlide(float x, float z);                // 0x42b910
     bool barrierHit(float x1, float z1, float x2, float z2, float y);   // 0x42d700
+    void addBarrier(const char *name, float x1, float z1, float x2, float z2, float y0, float y1);   // 0x42d7d0
     bool slideAlong(float dist, bool back);         // the slide part of 0x42a890 / 0x42ace0
     void moveForward(float dist);                   // 0x42a890
     void moveBack(float dist);                      // 0x42ace0
@@ -218,6 +224,11 @@ public:
     double angleDeg() const;                        // 0x42b560: the view direction in degrees (x87 value)
     void camPos(float out[3]) const { out[0] = camx; out[1] = eyef; out[2] = camz; }   // 0x42b490
     double spriteDist(const Sprite3D *s) const;     // 0x42e3d0: the sprite's floor distance from the camera
+    // 0x42e400: (x, z)'s floor distance from the camera (the x87 value)
+    double floorDist(float x, float z) const {
+        double dx = (double)x - camx, dz = (double)z - camz;
+        return sqrt(dx * dx + dz * dz);
+    }
     double eyeWorld() const;                        // 0x42b520: the camera height in sprite units
     WallObject *findWall(const char *name);         // 0x42d6a0
     // 0x4292f0: a named collision box (x from minx to maxx, height y0..y1, z from minz to maxz)

@@ -334,6 +334,23 @@ Vision::Graphic *TinkerbellRaytraceScene::cursorUpdate() {
     return c;
 }
 
+Vision::Graphic *TinkerbellRaytraceScene::uiCursor() {   // 0x4abb70
+    State &st = Game::state();
+    Vision::Graphic *hand = st.cursor_active;        // +0x60
+    Vision::Graphic *c = nullptr;
+    if (st.dusting) c = &pixie;                      // +0x3c4, +0x17d8
+    else if (map.hit(g_mouse.x, g_mouse.y)) c = hand;   // v11 (+0x19a0)
+    else if (bag->visible && bag->hit(g_mouse.x, g_mouse.y)) c = hand;   // +0x1998 (+0x7c)
+    else if (bell.hit(g_mouse.x, g_mouse.y)) c = hand;   // +0x1fe8
+    // port: the exe reads the cursor's name blindly (a cursor is always set by then)
+    else if (g_cursor_graphic && strcmp("glob_cu_normal_", g_cursor_graphic->name()) == 0) {   // 0x423c60
+        for (Raytrace::RayTraceCharacter *ch : chars)  // +0x2820
+            if (rt.hitSprite(ch->sprite(), g_mouse.x, g_mouse.y)) { c = hand; break; }   // 0x4cc8b0, 0x42c7b0
+    }
+    over_ui = c != nullptr;                          // +0x2830
+    return c;
+}
+
 // v27 0x4ab0f0 (part): the 3D scene, then the global_3d and tinkerbell3D packs, Tink and the frame task.
 void TinkerbellRaytraceScene::open(const char *nm) {
     Game::state().hover_up = false;                        // +0x75

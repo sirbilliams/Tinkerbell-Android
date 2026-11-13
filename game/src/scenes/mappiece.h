@@ -56,4 +56,18 @@ public:
     Raytrace::Sprite3D *stump = nullptr;             // +0xd8 "AA_totm_ga_totstump_01"
 };
 
+// Mermaid Cove's (vtable 0x517a18, ctor 0x4e7500, load v11 0x4e7540, stop v14 0x4e75f0, clear v12 0x4e7640, show
+// v13 0x4e7660, run v10 0x4e76f0): the Shell Game's segment comes out of the log as its lid opens and closes again.
+// Its fields sit 4 further on than the others' (+0xd8 the lid, +0xdc the segment, +0xe0 the poof).
+class ShellMapPiece : public MapPiece {
+public:
+    explicit ShellMapPiece(Raytrace::RayTrace *r) : MapPiece(r) {}   // 0x4e7500
+    void load() override;                            // v11 0x4e7540
+    void stop() override;                            // v14 0x4e75f0
+    void clear() override { lid = nullptr; piece = poof = nullptr; }   // v12 0x4e7640
+    void show() override;                            // v13 0x4e7660
+    void run() override;                             // v10 0x4e76f0
+    Raytrace::Attachment *lid = nullptr;             // +0xd8 "SHEL_GA_logopen_" on "AA_shel_ga_woodlog_01"
+};
+
 }  // namespace Game

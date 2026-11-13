@@ -381,6 +381,51 @@ void State::saveLostTokens() {                       // 0x4eec40
     saves.setTokens("Lost Tokens", v);               // 0x4ea170
 }
 
+// 0x4eefc0: the saved pieces; a new player's: three hidden in Mermaid Cove, one each from Coconuts Away (2) and
+// Pearl Toss (3), at random.
+void State::loadMermaidTokens() {
+    std::vector<TokenRecord> v = saves.tokens("Mermaid Tokens");   // 0x4e9e30
+    if (!v.empty()) {
+        for (size_t i = 0; i < v.size() && i < 5; i++) {
+            mcov[i].state = v[i].state;
+            if (v[i].easy) mcov[i].setEasy(); else mcov[i].setHard();
+            mcov[i].x = v[i].x;
+            mcov[i].y = v[i].y;
+            mcov[i].z = v[i].z;
+        }
+        return;
+    }
+    for (TokenInfo &t : mcov) t.state = 0;
+    HidingPlaces hp;                                 // 0x4f1110
+    hp.load("mermaid");                                 // 0x4ecbf0
+    for (int n = 0; n < 3; n++) {
+        int r;
+        do r = Vision::vision_random(5); while (mcov[r].state != 0);   // the local random object (0x425d40)
+        mcov[r].state = 1;
+        hp.assign(&mcov[r], skill);                  // +0x68
+    }
+    int r;
+    do r = Vision::vision_random(5); while (mcov[r].state != 0);
+    mcov[r].state = 2;
+    for (TokenInfo &t : mcov)
+        if (t.state == 0) { t.state = 3; break; }
+    saveMermaidTokens();
+}
+
+void State::saveMermaidTokens() {                       // 0x4ef3a0
+    std::vector<TokenRecord> v(5);
+    for (int i = 0; i < 5; i++) {
+        v[i].state = mcov[i].state;
+        if (mcov[i].state != 1) continue;            // only a hidden piece keeps its place (the others: the
+                                                     // exe's uninitialised local; port: zeros)
+        v[i].easy = mcov[i].easy;
+        v[i].x = mcov[i].x;
+        v[i].y = mcov[i].y;
+        v[i].z = mcov[i].z;
+    }
+    saves.setTokens("Mermaid Tokens", v);               // 0x4ea190
+}
+
 // 0x4ed270: Indian Village's pieces ("Village Tokens", 0x4e9e00); a new player's: three hidden in the area (state
 // 3), one from Bird Spy (1) and one from Flying Hoops (2), at random. (The saved slot is not kept.)
 void State::loadVillageTokens() {
