@@ -1,6 +1,30 @@
 # Next session
 
-## Latest (Nov 12 night, Mermaid Cove, ~82%)
+## Latest (Nov 13, Skull Rock, ~86%)
+- game/src/scenes/skull.*: Skull_Scene (0x488260, "skull", static 0x5dac88). The rabbit at Echo Echo's sign, Peter
+  at Firefly's (leaving by it flies up to "firefly"), the skunk at Shadow Boxing's. Three GemSigns, a drip or a bat
+  now and then (neither sound is in the data), the instruments' bar (TokenInterface "ECHO_IF_interface_").
+  - State: TokenInfo skull[5] (+0x16a0, "Skull Tokens") with loadSkullTokens 0x4ee110 / saveSkullTokens 0x4ee4e0,
+    skullDone 0x4ee820 (all 6), anySkull 0x4ee7c0 / allSkull 0x4ee7f0; +0x7a5 shadow_ended. games_skrl is gone.
+  - EchoMapPiece (0x4e79d0) in mappiece.*: Peter's shadow on the cave wall, the segment from 600 up.
+  - Tinkerbell3D::toAttachment 0x4db660 (over or under an attachment, pointing).
+- game/src/scenes/shadowboxing.*: Shadow Boxing (0x482360 at +0x43c0, plain new each enter). Five animals pop up
+  behind five rocks (7 s down at least); the net (ShadowCursor) catches one that is up; eight before the fuse win.
+  The pirates row in now and then (skill: visits); dust on the crocodile makes it snap and scares them off. The eye
+  hovers to the nearest rock's height (Skull's hover v32).
+  - Exe quirks kept: the catch sound (+0x30) is never named; "shbx_fx_flyup"/"flydw_01" are not in the data;
+    teardown removes "gator" (the sprite is "gator_base"); the group's update fills an unused distance.
+- game/src/scenes/echoecho.*: Echo Echo (0x4896d0 at +0x43bc). The cave echoes 1..length animal sounds; the player
+  clicks the matching instruments on the shelf in order; seven rounds right win (the map segment). Timed (and one
+  longer) when played before.
+- Test aids: TB_DEBUG_SKULL=1, TB_SKULL_TOKENS=55555, TB_SHADOW_AUTO=1 (each animal caught when idle),
+  TB_ECHO_AUTO=1 (the right instrument picked). Spaces at 300..500 skip the welcome. The fuse runs on real time.
+  Shadow Boxing: `TB_RT_CAM="2752,1228,90,0.1"`, sign at 330,330. Echo Echo: `TB_SKULL_TOKENS=55555
+  TB_RT_CAM="4788,4142,90,0.1"`, sign at 320,340. Firefly's sign: `TB_RT_CAM="4653,1701,90,0.1"`, 320,340.
+  The dev save (Save/save5.txt) keeps "Info" between runs: delete the Skull sections to replay a first win.
+- Next: "treasure" (0x48f660), the token load 0x4e6390.
+
+## Nov 12 night, Mermaid Cove (~82%)
 - game/src/scenes/mermaid.*: Mermaid_Scene (0x44d9c0, "Mermaid", static 0x5ba320). Cubby at the Pearl Toss sign,
   the rabbit at Coconuts Away's (leaving by it flies up to "coconut"), the skunk at the Shell Game's. The two
   mermaids sit on their rocks (idle sprites); MermaidTokensInterface shows the shells won (hidden during Pearl

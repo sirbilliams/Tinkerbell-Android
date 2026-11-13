@@ -11,6 +11,7 @@ namespace Game {
 
 using Vision::VoiceOver;
 
+void skull_refresh_tokens();                         // skull.cpp: 0x4857a0 on the Skull Rock scene (0x5dac88)
 void lost_refresh_tokens();                          // lost.cpp: 0x442e00 on the Lost Boys' scene (0x5ac4f8)
 
 // The game names (0x5434fc..0x543534) and scene names (0x631700..0x631760).
@@ -112,9 +113,7 @@ void CharacterClick::say(bool first_time) {
         } else if (key == "ECHO_ECHO_CHAR") {        // 0x631188
             fl = f->take(0x15);
             info = st.saves.gameInfo("Echo Echo Game");
-            int n5 = 0; bool any6 = false;
-            for (int v : st.games_skrl) { if (v == 5) n5++; if (v == 6) any6 = true; }
-            done = any6 || n5 == 5;                  // 0x4ee7c0 || 0x4ee7f0
+            done = st.anySkull(6) || st.allSkull(5);   // 0x4ee7c0 || 0x4ee7f0
         } else if (key == "CLOUD_BURST_CHAR") {      // 0x631138
             fl = f->take(0x16);
             info = st.saves.gameInfo("Cloud Burst Game");
@@ -228,10 +227,6 @@ void EndOfGame::award() {
     if (!a || (st.last_game != 2 && st.last_game != 3)) { st.saves.flush(); return; }
     bool g2 = st.last_game == 2;
     st.saves.setGameInfo(g2 ? a->game2 : a->game3, 1);   // 0x4e9db0
-    auto mark = [](int *recs, int from, int to) {
-        for (int i = 0; i < 5; i++)
-            if (recs[i] == from) recs[i] = to;       // and the area's save each time (TODO)
-    };
     if (!strcmp(a->scene, "Mermaid")) {
         int from = g2 ? 2 : 3;
         for (TokenInfo &t : st.mcov)
@@ -264,7 +259,15 @@ void EndOfGame::award() {
                 st.saveLostTokens();                 // 0x4eec40
                 lost_refresh_tokens();               // 0x442e00 (0x5ac4f8)
             }
-    } else if (!strcmp(a->scene, "skull")) mark(st.games_skrl, g2 ? 2 : 3, 5);     // 0x4ee4e0, 0x5dac88
+    } else if (!strcmp(a->scene, "skull")) {
+        int from = g2 ? 2 : 3;
+        for (TokenInfo &t : st.skull)
+            if (t.state == from) {
+                t.state = 5;
+                st.saveSkullTokens();                // 0x4ee4e0
+                skull_refresh_tokens();              // 0x4857a0 (0x5dac88)
+            }
+    }
     st.saves.flush();                                // 0x4e9840
 }
 
@@ -296,9 +299,7 @@ void EndOfGame::nextLine() {
         } else if (!strcmp(a->scene, "lost")) {
             done = st.allLost(4) || st.anyLost(5);   // 0x4eef50 || 0x4eef20
         } else {
-            int n5 = 0; bool any6 = false;
-            for (int v : st.games_skrl) { if (v == 5) n5++; if (v == 6) any6 = true; }
-            done = n5 == 5 || any6;                  // 0x4ee7f0 || 0x4ee7c0
+            done = st.allSkull(5) || st.anySkull(6);   // 0x4ee7f0 || 0x4ee7c0
         }
         if (info == 0) next = lines[4];
         else if (done) next = lines[5];
@@ -440,7 +441,7 @@ void SignClick::run() {
         auto n_of = [](const int *a, int v) { int n = 0; for (int i = 0; i < 5; i++) if (a[i] == v) n++; return n; };
         switch (g.area) {
         case 1: done = st.anyMermaid(5) || st.allMermaid(4); break;   // 0x4ef6b0 / 0x4ef6e0
-        case 2: done = n_of(st.games_skrl, 6) > 0 || n_of(st.games_skrl, 5) == 5; break;   // 0x4ee7c0 / 0x4ee7f0
+        case 2: done = st.anySkull(6) || st.allSkull(5); break;   // 0x4ee7c0 / 0x4ee7f0
         case 3: done = st.anyLost(5) || st.allLost(4); break;                             // 0x4eef20 / 0x4eef50
         case 4: done = st.anyStarry(5) || st.allStarry(4); break;                         // 0x4ee070 / 0x4ee0a0
         case 5: done = st.allVillage(4); break;                                            // 0x4ed990
@@ -529,7 +530,7 @@ bool SceneInactivity::allowed(int i) {
     if (k == "Shell Game") return st.allMermaid(4) || st.anyMermaid(5);
     if (k == "Totem Trail Game") return st.allVillage(4);
     if (k == "Cloud Burst Game") return st.allStarry(4) || st.anyStarry(5);
-    if (k == "Echo Echo Game") return n_of(st.games_skrl, 5) == 5 || n_of(st.games_skrl, 6) > 0;
+    if (k == "Echo Echo Game") return st.allSkull(5) || st.anySkull(6);
     return false;
 }
 

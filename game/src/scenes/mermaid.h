@@ -1,7 +1,7 @@
 // Mermaid Cove (area 5), reconstructed from "Tinker Bell.exe": Mermaid_Scene (vtable 0x514830, ctor 0x44d9c0,
 // dtor 0x44e480, the static at 0x5ba320, scene "Mermaid"). Cubby stands at the Pearl Toss sign (played here), the
 // rabbit at Coconuts Away's (its own scene, "coconut"), the skunk at the Shell Game's (played here once the five
-// shells are found). The shells: one hidden in the area, two from Coconuts Away, two from Pearl Toss.
+// shells are found). The shells: three hidden in the area, one from Coconuts Away, one from Pearl Toss.
 //   load2 v18 0x44e9b0, enter v19 0x44feb0, leave v20 0x450740, run v10 0x450980, notify2 v9 0x452120,
 //   onMouse v25 0x451720, onKey v26 0x4516c0; mermaids 0x452160, signs 0x4522b0, music 0x452600,
 //   groundTokens 0x4526a0, pickToken 0x4528d0, hotsOn 0x452af0, leaveTo 0x452b20, shellHint 0x452c30.

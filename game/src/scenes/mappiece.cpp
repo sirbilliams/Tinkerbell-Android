@@ -2,6 +2,8 @@
 #include "mappiece.h"
 #include "../vision/animation.h"
 #include <math.h>
+#include <stdlib.h>
+#include "tb.h"
 
 namespace Game {
 
@@ -246,6 +248,94 @@ void ShellMapPiece::run() {
     piece->anim->visible = false;
     wait(1000);
     poof->anim->visible = false;
+    stop();                                          // v14
+    finish();                                        // 0x420fe0
+}
+
+}  // namespace Game
+
+namespace Game {
+
+// ---------------------------------------------------------------- EchoMapPiece
+void EchoMapPiece::load() {                          // v11 0x4e7a10
+    wall = rt->findWall("wall_sklr_wp_cave_01_24");  // 0x42d6a0
+    peter = rt->addSprite("echo_peter", "ECHO_GA_PETshadow_", 1);   // 0x42d9d0
+    peter->load();                                   // 0x42ef20
+    show_anim(peter, false);
+    peter->scale = 250.0f;                           // +0x84 0x437a0000
+    piece = rt->addSprite("map_piece", "ECHO_GA_MAPseg_", 1);
+    piece->load();
+    show_anim(piece, false);
+    poof = rt->addSprite("poof", "glob_am_ambspark_", 1);
+    poof->load();
+    show_anim(poof, false);
+}
+
+void EchoMapPiece::stop() {                          // v14 0x4e7ae0
+    if (busy()) deactivate();                        // v5, v7
+    show_anim(peter, false);
+    show_anim(piece, false);
+    show_anim(poof, false);
+}
+
+// 0x4e7b50: the shadow (its first frame) on the cave wall's middle, 250 up; the segment (hidden, playing) 600 up,
+// off to the side of the line from the camera to the shadow (200 across), as far as the shadow less one.
+void EchoMapPiece::show() {
+    // 0x42e910 (the wall's middle: 0x425df0)
+    float W[3] = {(float)(((double)wall->x2 - wall->x1) * 0.5f + wall->x1),
+                  (float)(((double)wall->top - wall->bottom) * 0.5f + wall->bottom),
+                  (float)(((double)wall->z2 - wall->z1) * 0.5f + wall->z1)};
+    W[0] = (float)((double)W[0] - cos((double)rt->angf));   // 0x42b550
+    W[1] = 250.0f;
+    W[2] = (float)((double)W[2] - sin((double)rt->angf));
+    peter->setPos(W[0], W[1], W[2]);                 // 0x42f740
+    peter->anim->visible = true;
+    peter->mode = 3;                                 // +0x88
+    peter->anim->setFrame(0);                        // 0x403f20
+    float C[3];
+    rt->camPos(C);                                   // 0x42b490
+    double dx = (double)C[0] - W[0], dy = (double)C[1] - W[1], dz = (double)C[2] - W[2];
+    float dist = (float)(sqrt(dx * dx + dy * dy + dz * dz) - 1.0f);   // 0x425d50, 0x513710
+    double ang = atan2((double)W[2] - C[2], (double)W[0] - C[0]);   // 0x425d80
+    ang += atan2(-200.0, (double)dist);              // 0x517aa0 (fpatan)
+    piece->setPos((float)(cos(ang) * dist + C[0]), 600.0f, (float)(sin(ang) * dist + C[2]));
+    piece->mode = 3;
+    piece->anim->setFrame(0);
+    piece->anim->play(0, 1);                         // 0x403be0(0, 1)
+    show_anim(piece, false);
+    if (getenv("TB_DEBUG_SKULL"))                    // test aid
+        tb_log("skull: map piece: shadow %.0f,%.0f,%.0f (%d frames) segment %.0f,%.0f,%.0f (%u)", peter->x, peter->y,
+               peter->z, peter->anim->count(), piece->x, piece->y, piece->z, Vision::frame_time());
+    reset();                                         // 0x421110
+    activate();                                      // +0x18
+}
+
+// 0x4e7d10: the shadow plays to its middle (30 ms a frame); then on (its clock restarted with its frame number as
+// the delay: the exe's) while the segment eases to the camera, until either ends; the shadow off, the poof.
+void EchoMapPiece::run() {
+    wait(1);
+    Vision::Animation *g = peter->anim;
+    while (g->step() && g->current() + 1 < g->count() / 2) wait(0x1e);   // 0x403d60, 0x403f00, 0x403c10
+    g->play((uint32_t)g->current(), 0);              // 0x403be0(current, 0)
+    piece->anim->visible = true;
+    fresh = true;                                    // +0xc4
+    while (ease(piece)) {                            // 0x4e73f0
+        if (g->current() + 1 >= g->count()) break;
+        if (g->current() + 1 >= g->count()) show_anim(peter, false);
+        wait(0x1e);
+    }
+    show_anim(peter, false);
+    float px = piece->x, py = piece->y, pz = piece->z;   // 0x42f700
+    float bx = (float)((double)px - cos(rt->angf));  // 0x42b550
+    float bz = (float)((double)pz - sin(rt->angf));
+    poof->setPos(bx, py, bz);
+    poof->anim->visible = true;
+    poof->anim->setFrame(0);
+    poof->anim->play(0, 1);
+    wait(1000);
+    show_anim(piece, false);
+    wait(1000);
+    show_anim(poof, false);
     stop();                                          // v14
     finish();                                        // 0x420fe0
 }

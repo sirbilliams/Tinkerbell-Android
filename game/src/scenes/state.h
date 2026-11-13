@@ -110,6 +110,7 @@ struct State {
     int last_game = 0, last_result = 0;             // +0x79c +0x7a0: the last mini game played and how it ended
     bool guide_loaded = false;                       // +0x7b8: a mini game's PeterGuide was loaded
     bool pearl_ended = false;                        // +0x7a4: Pearl Toss ended (the Mermaid scene's run takes it)
+    bool shadow_ended = false;                       // +0x7a5: Shadow Boxing ended (the Skull Rock scene's run takes it)
     bool flag_ended = false;                         // +0x7a6: the pirate flag game ended (an EndOfGame to run)
     bool hoops_ended = false;                        // +0x7a7: Flying Hoops ended (the same, in the Indian Village)
     bool back_ended = false;                         // +0x7a8: Backwards Go ended (the same, in Starry Skies)
@@ -123,9 +124,8 @@ struct State {
     void setAreaSpot(int area, int spot) { cur_spot[area] = spot; }                          // 0x4ec120
     std::string last_scene = "lost";                 // +0x1830: the last 3D scene (not "treasure")
     // the areas' game records (the first int of each; 5 games per area): Indian village +0x15a0 (0x1c apart),
-    // Starry skies +0x162c, Skull rock +0x16a4, Lost Boys +0x172c, Mermaid cove +0x17a4 (0x18 apart).
+    // Starry skies +0x162c, Lost Boys +0x172c, Mermaid cove +0x17a4 (0x18 apart).
     // port: what fills them (the areas and the save) is not ported yet; 0 for a new player.
-    int games_skrl[5] = {};
     // Indian Village's five totem pieces ("Village Tokens"): 3 hidden in the area, 1 Bird Spy's, 2 Flying Hoops'.
     VillageToken village[5];                         // +0x159c (states at +0x15a0)
     void loadVillageTokens();                        // 0x4ed270
@@ -139,6 +139,14 @@ struct State {
     void starryDone() { for (TokenInfo &t : starry) t.state = 5; saveStarryTokens(); saves.flush(); }   // 0x4ee0d0
     bool anyStarry(int v) const { for (const TokenInfo &t : starry) if (t.state == v) return true; return false; }   // 0x4ee070 (5)
     bool allStarry(int v) const { for (const TokenInfo &t : starry) if (t.state != v) return false; return true; }   // 0x4ee0a0 (4)
+    // Skull Rock's five instruments ("Skull Tokens"): 3 hidden in the area, 1 Firefly's (2), 1 Shadow Boxing's (3);
+    // 5 won, 6 all given to Echo Echo.
+    TokenInfo skull[5];                              // +0x16a0 (states at +0x16a4)
+    void loadSkullTokens();                          // 0x4ee110
+    void saveSkullTokens();                          // 0x4ee4e0
+    void skullDone() { for (TokenInfo &t : skull) t.state = 6; saveSkullTokens(); saves.flush(); }   // 0x4ee820
+    bool anySkull(int v) const { for (const TokenInfo &t : skull) if (t.state == v) return true; return false; }   // 0x4ee7c0 (6)
+    bool allSkull(int v) const { for (const TokenInfo &t : skull) if (t.state != v) return false; return true; }   // 0x4ee7f0 (5)
     TokenInfo lost[5];                               // +0x1728 (states at +0x172c)
     void loadLostTokens();                           // 0x4ee860: from the save, or hidden and handed out anew
     void saveLostTokens();                           // 0x4eec40

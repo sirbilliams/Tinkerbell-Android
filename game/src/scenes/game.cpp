@@ -9,6 +9,7 @@
 #include "indianvillage.h"
 #include "colorthecloud.h"
 #include "firefly.h"
+#include "skull.h"
 #include "starry.h"
 #include "pickagame.h"
 #include "map.h"
@@ -128,6 +129,7 @@ void tb_game_register() {
     Game::colorthecloud_scene();                                      // 0x46ce80, the static at 0x5d0058 (scenes/colorthecloud.cpp)
     Game::starry_scene();                                             // 0x477b30, the static at 0x5d2c60 (scenes/starry.cpp)
     Game::firefly_scene();                                            // 0x47db70, the static at 0x5d91b0 (scenes/firefly.cpp)
+    Game::skull_scene();                                              // 0x483d20 -> 0x488260, the static at 0x5dac88 (scenes/skull.cpp)
     Game::lost_scene();                                               // 0x43e5b0, the static at 0x5ac4f8 (scenes/lost_scene.cpp)
     static Game::LostTutorial_Scene lost_tutorial;                   // 0x443e70 -> 0x444440 (scenes/lost.cpp)
     Game::pickagame_scene();                                          // 0x4ae6a0, the static at 0x62a5b0 (scenes/pickagame.cpp)

@@ -70,4 +70,19 @@ public:
     Raytrace::Attachment *lid = nullptr;             // +0xd8 "SHEL_GA_logopen_" on "AA_shel_ga_woodlog_01"
 };
 
+// Skull Rock's (vtable 0x517a5c, ctor 0x4e79d0, load v11 0x4e7a10, stop v14 0x4e7ae0, clear v12 0x4e7b30, show
+// v13 0x4e7b50, run v10 0x4e7d10): Echo Echo's segment. Peter's shadow plays on the cave wall (half of it), the
+// segment comes from 600 up off to the side to the camera while the shadow ends, then the poof.
+class EchoMapPiece : public MapPiece {
+public:
+    explicit EchoMapPiece(Raytrace::RayTrace *r) : MapPiece(r) {}   // 0x4e79d0
+    void load() override;                            // v11 0x4e7a10
+    void stop() override;                            // v14 0x4e7ae0
+    void clear() override { wall = nullptr; peter = nullptr; piece = nullptr; }   // v12 0x4e7b30 (the poof kept)
+    void show() override;                            // v13 0x4e7b50
+    void run() override;                             // v10 0x4e7d10
+    Raytrace::WallObject *wall = nullptr;            // +0xe0 "wall_sklr_wp_cave_01_24"
+    Raytrace::Sprite3D *peter = nullptr;             // +0xe4 "echo_peter" ("ECHO_GA_PETshadow_", 250 %)
+};
+
 }  // namespace Game

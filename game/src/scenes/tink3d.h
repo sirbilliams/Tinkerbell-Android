@@ -81,6 +81,7 @@ public:
     void hiya();                                     // 0x4dbe60: the wave with "GLOB_FX_TNKhiya1" (vtable 0x517644)
     void guideTo(Raytrace::Sprite3D *s);             // 0x4dc250: in front of the camera, beckon, fly over (or
                                                      // under) the sprite, wait for the player, point at it
+    void toAttachment(Raytrace::Attachment *a);     // 0x4db660: over (or under) it, pointing at it
     void toMap();                                    // 0x4db5b0: off to the left, point down (at the map icon)
     void noHelp();                                   // 0x4dc1d0: in front of the camera, the hiya wave
     void ahead(float *x, float *z, float d);         // 0x4da8f0: d in front of the camera

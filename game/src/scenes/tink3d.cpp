@@ -356,6 +356,31 @@ void Tinkerbell3D::toMap() {
     point(x, 25.0f, z);
 }
 
+// 0x4db660: to an attachment: 100 over its top when that is low (under 400), else 100 under its foot when that is
+// high (over 600), else over its top; pointing at its top (or its foot).
+void Tinkerbell3D::toAttachment(Raytrace::Attachment *a) {
+    float p[3];
+    rt->stickerPos(a->name.c_str(), p);              // 0x42df30
+    double h = (double)a->g->h * 0.5f;               // +0x150 +0x68, 0x513298
+    float top = (float)(h + p[1]);
+    float fly, at;
+    if (top < 400.0f) {                              // 0x514f04
+        fly = (float)((double)top + 100.0f);         // 0x513da0
+        at = (float)((double)fly - 100.0f);
+    } else {
+        double foot = (double)p[1] - h;
+        if (foot > 600.0f) {                         // 0x515a40
+            fly = (float)(foot - 100.0f);
+            at = (float)((double)fly + 100.0f);
+        } else {
+            fly = (float)((double)top + 100.0f);
+            at = (float)((double)fly - 100.0f);
+        }
+    }
+    pushBasic(2, p[0], fly, p[2]);                   // 0x4de020
+    point(p[0], at, p[2]);                           // 0x4db7b0
+}
+
 // 0x4dc1d0: as far in front as the eye is high, at that height; then the wave.
 void Tinkerbell3D::noHelp() {
     float e = (float)rt->eyeWorld();                 // 0x42b520

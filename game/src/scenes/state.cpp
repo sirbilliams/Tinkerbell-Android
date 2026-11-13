@@ -426,6 +426,50 @@ void State::saveMermaidTokens() {                       // 0x4ef3a0
     saves.setTokens("Mermaid Tokens", v);               // 0x4ea190
 }
 
+// 0x4ee110: Skull Rock's instruments, as the Mermaid shells (the same code).
+void State::loadSkullTokens() {
+    std::vector<TokenRecord> v = saves.tokens("Skull Tokens");   // 0x4e9e10
+    if (!v.empty()) {
+        for (size_t i = 0; i < v.size() && i < 5; i++) {
+            skull[i].state = v[i].state;
+            if (v[i].easy) skull[i].setEasy(); else skull[i].setHard();
+            skull[i].x = v[i].x;
+            skull[i].y = v[i].y;
+            skull[i].z = v[i].z;
+        }
+        return;
+    }
+    for (TokenInfo &t : skull) t.state = 0;
+    HidingPlaces hp;                                 // 0x4f1110
+    hp.load("skull");                                 // 0x4ecbf0
+    for (int n = 0; n < 3; n++) {
+        int r;
+        do r = Vision::vision_random(5); while (skull[r].state != 0);   // the local random object (0x425d40)
+        skull[r].state = 1;
+        hp.assign(&skull[r], skill);                  // +0x68
+    }
+    int r;
+    do r = Vision::vision_random(5); while (skull[r].state != 0);
+    skull[r].state = 2;
+    for (TokenInfo &t : skull)
+        if (t.state == 0) { t.state = 3; break; }
+    saveSkullTokens();
+}
+
+void State::saveSkullTokens() {                       // 0x4ee4e0
+    std::vector<TokenRecord> v(5);
+    for (int i = 0; i < 5; i++) {
+        v[i].state = skull[i].state;
+        if (skull[i].state != 1) continue;            // only a hidden piece keeps its place (the others: the
+                                                     // exe's uninitialised local; port: zeros)
+        v[i].easy = skull[i].easy;
+        v[i].x = skull[i].x;
+        v[i].y = skull[i].y;
+        v[i].z = skull[i].z;
+    }
+    saves.setTokens("Skull Tokens", v);               // 0x4ea190
+}
+
 // 0x4ed270: Indian Village's pieces ("Village Tokens", 0x4e9e00); a new player's: three hidden in the area (state
 // 3), one from Bird Spy (1) and one from Flying Hoops (2), at random. (The saved slot is not kept.)
 void State::loadVillageTokens() {
