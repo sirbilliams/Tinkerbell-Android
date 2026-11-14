@@ -14,7 +14,8 @@
   Grid cells at x 255/300/345/390, y 60/105/150/195; slots at x 207/263/320/377/433, y 345; the bell at 45,435.
   Skip the intro with Q (`300:key 81,0`), clicks from frame 1200; the ending waits for a click on Peter (280,250).
 - 0x4e6390 is not a load: State::resetGames (the +0x78c session flags) at sign-in; erase resets the frame's Firsts (0x4c6450).
-- Next: the remaining TODOs (state.cpp 0x4f0 init flags, raytrace +0x525 panorama), then a full playthrough.
+- initGlobals (0x4ec920) complete; the +0x525 panorama sky is never switched on in the exe (noted, not ported).
+- Next: no port TODOs left in the code; a full playthrough (desktop, then the Thor) to find what is missing.
 
 ## Nov 13, Skull Rock (~86%)
 - game/src/scenes/skull.*: Skull_Scene (0x488260, "skull", static 0x5dac88). The rabbit at Echo Echo's sign, Peter

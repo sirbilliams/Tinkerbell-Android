@@ -66,14 +66,22 @@ void State::setCameraToSpot(int area, int spot, Raytrace::RayTrace *rt) const { 
 bool State::vo_busy() const { return Vision::VoiceOver::get().busy(); }
 
 // 0x4ec920, called by the state's constructor: (re)opens the "global" pack (the cursors and the shared sounds'
-// art) and creates the game's two cursor animations. port: TODO the rest of it (+0x68 = 1, the flags at +0x78,
-// +0x3c4, +0x1598, +0x75/+0x76, and the four floats at +0x1718) with the scenes that use them.
+// art) and creates the game's two cursor animations; the skill 1, a few flags, the treasure's camera spot.
 void State::initGlobals() {
+    skill = 1;                                       // +0x68
+    flag_1598 = true;                                // +0x1598
+    flag_78 = false;                                 // +0x78
+    dusting = false;                                 // +0x3c4
+    hover_up = hover_down = false;                   // +0x75 +0x76
     if (global_ras) { Vision::ras_close(global_ras); global_ras = nullptr; }   // 0x41b050
     global_ras = Vision::ras_open("global", "", &Vision::data_device());       // 0x419b90
     global_ras->load();                                                          // 0x41aa20
     cursor = new Vision::Animation("glob_cu_normal_");                          // 0x404c20
     cursor_active = new Vision::Animation("glob_cu_active_");
+    treasure_spot[0] = 2562.07f;                     // +0x1718 (0x4520211f)
+    treasure_spot[1] = 50.1f;                        // 0x42486666
+    treasure_spot[2] = 3173.9f;                      // 0x45465e66
+    treasure_spot[3] = -90.0f;                       // 0xc2b40000
 }
 
 // The end of the state's constructor 0x4ec6e0 (after 0x4ec920): the global pack current, the cursors loaded

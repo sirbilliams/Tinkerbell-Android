@@ -389,7 +389,7 @@ void RayTrace::drawSky() {
     sky_rows = 480 - g_sky_top;
     uint16_t *dst0 = canvas_pixels();
     if (!dst0 || sky_tex < 0 || sky_tex >= (int)textures.size() || !textures[sky_tex]) return;
-    // port: TODO +0x525 (the panorama variant 0x42a340)
+    // (+0x525 picks the panorama variant 0x42a340: only ever set to 0, by 0x4281a0, 0x429b63 and 0x429e55)
     Vision::Pixelmap *pm = textures[sky_tex];
     uint32_t tw = (uint32_t)pm->w, th = (uint32_t)pm->h;
     const uint16_t *src = tex_pixels(pm);

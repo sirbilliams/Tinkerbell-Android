@@ -107,6 +107,9 @@ struct State {
     int skill = 1;                                   // +0x68 (0x4ec920: 1)
     Vision::Sound *throwdust = nullptr;              // +0x7c "GLOB_FX_throwdust"
     bool dusting = false;                            // +0x3c4: the pixie dust is on the cursor
+    bool flag_78 = false;                            // +0x78 (set by 0x4ec920 only)
+    bool flag_1598 = true;                           // +0x1598 (set by 0x4ec920 only, never read)
+    float treasure_spot[4] = {};                     // +0x1718: the treasure puzzle's camera (never read)
     int dust = 0;                                    // +0x3c8: the pixie dust in the bag (0..50)
     int last_game = 0, last_result = 0;             // +0x79c +0x7a0: the last mini game played and how it ended
     bool guide_loaded = false;                       // +0x7b8: a mini game's PeterGuide was loaded
