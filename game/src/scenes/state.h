@@ -116,6 +116,12 @@ struct State {
     bool hoops_ended = false;                        // +0x7a7: Flying Hoops ended (the same, in the Indian Village)
     bool back_ended = false;                         // +0x7a8: Backwards Go ended (the same, in Starry Skies)
     bool totem_ended = false;                        // +0x7a9: Totem Trail ended (its EndOfPuzzleGame to run)
+    // 0x4e6390 (on +0x78c): a new sign-in: no game played, none ended, no PeterGuide loaded
+    void resetGames() {
+        last_game = 0;
+        pearl_ended = shadow_ended = flag_ended = hoops_ended = back_ended = totem_ended = false;
+        guide_loaded = false;
+    }
     bool back_stopped = false;                       // +0x64c: set by Backwards Go's end, cleared by its calls (never read)
     float tink_home[3] = {};                         // +0x7ac..+0x7b4 (0x4e63b0 on +0x78c): where Tink waits
     void setTinkHome(float x, float y, float z) { tink_home[0] = x; tink_home[1] = y; tink_home[2] = z; }

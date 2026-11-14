@@ -176,8 +176,7 @@ void SignInFrame::save(int n) {
     sv.setInt("Frame Color", n);
     Game::state().frame_color = n;                         // 0x4ef7b0(n)
     Game::state().firsts = &Game::state().players[n];      // +0x788 = +0x650 + n * 0x34
-    // port: TODO 0x4e6390 loads the other areas' progress from the save; they
-    // come with the areas' scenes (until then the rand() draws of a new player's pieces differ).
+    Game::state().resetGames();                            // 0x4e6390 (+0x78c)
     Game::state().loadVillageTokens();                     // 0x4ed270
     Game::state().loadStarryTokens();                      // 0x4ed9c0
     Game::state().loadSkullTokens();                       // 0x4ee110
@@ -188,7 +187,7 @@ void SignInFrame::save(int n) {
 
 // 0x4b0e80: deletes the frame's save and empties it.
 void SignInFrame::erase(int n) {
-    // port: TODO 0x4c6450 sets a block of the state's flags to 1 first (the state object isn't ported that far).
+    Game::state().players[n].reset();                // 0x4c6450 (+0x650 + n * 0x34)
     Saves &sv = Game::state().saves;
     sv.open(save_name(n));                           // the exe names it "Save\save<n>"; Saves keeps them in Save\.
     sv.deleteCurrent();                              // 0x4e9860
